@@ -6,7 +6,7 @@
 
 | 자격증 | 카드 | 바로가기 | 데이터 |
 |---|---|---|---|
-| 정보처리기사 실기 | 10과목 · 764장 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
+| 정보처리기사 실기 | 13과목 · 926장 (C·Java·Python 코드 문제 60개 포함) | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
 
 ## 쓰는 법
 
@@ -29,12 +29,19 @@
   - 보충 한 줄 (선택)
 - Q: 질문 — 답
 
+- Q: 다음 코드의 출력 결과는?
+  ```c
+  int main(void) { ... }
+  ```
+  - 답: `7`
+  - 해설 한 줄 (선택)
+
 > 가리지 않는 메모
 ```
 
 - 용어와 정의 사이는 ` — `(앞뒤 공백이 있는 줄표)입니다.
 - `- **…**` 줄은 용어 카드, `- Q:` 줄은 문답 카드가 됩니다.
-- 코드는 백틱으로 감쌉니다.
+- 코드는 백틱으로 감쌉니다. 코드 읽기 문제의 답은 실제로 실행한 출력과 같아야 합니다. 여러 줄 답은 `- 답:` 아래에 네 칸 들여쓴 ```` ```text ```` 블록으로 씁니다.
 
 ```
 index.html                 첫 화면

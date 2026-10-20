@@ -2,22 +2,43 @@
 let DATA = [];
 
 // Markdown 한 파일 → 과목 1개의 그룹 목록
-//   # 과목   ## 그룹   - **용어** — 정의   - Q: 질문 — 답   (들여쓴 "  - " 줄은 보충)   > 메모
+//   # 과목   ## 그룹   > 메모
+//   - **용어** — 정의          - Q: 질문 — 답        (들여쓴 "  - " 줄은 보충)
+//   - Q: 질문                  코드 읽기 문제: 아래에 들여쓴 ```코드```, 그다음 "  - 답: …"
+//     ```c                     여러 줄 답은 "  - 답:" 아래에 네 칸 들여쓴 ```text``` 블록
+//     ...
+//     ```
+//     - 답: `7`
 function parseDeck(md){
-  const out = []; let ch = '', g = null, last = null;
+  const out = []; let ch = '', g = null, last = null, fence = null;
   for (const raw of md.split('\n')){
     const line = raw.replace(/\s+$/, '');
+    if (fence){
+      if (line.trim() === '```'){ last[fence.key] += '\n```'; fence = null; }
+      else last[fence.key] += '\n' + line.slice(Math.min(fence.indent, line.length - line.trimStart().length));
+      continue;
+    }
     if (!line.trim()) continue;
     let m;
     if ((m = line.match(/^# (.+)/))){ ch = m[1].trim(); continue; }
     if ((m = line.match(/^## (.+)/))){ g = { ch, t: m[1].trim(), items: [] }; out.push(g); last = null; continue; }
     if (!g){ g = { ch, t: '', items: [] }; out.push(g); }
     if ((m = line.match(/^> ?(.*)/))){ g.items.push({ k: 'N', a: m[1] }); last = null; continue; }
-    if ((m = line.match(/^ {2,}- (.*)/)) && last){ last.b += '\n' + m[1]; continue; }
-    if ((m = line.match(/^- \*\*(.+?)\*\* — (.*)/))){ last = { k: 'T', a: m[1], b: m[2] }; g.items.push(last); continue; }
-    if ((m = line.match(/^- Q: (.+?) — (.*)/))){ last = { k: 'Q', a: m[1], b: m[2] }; g.items.push(last); continue; }
+    if (last && (m = line.match(/^( {2,})```(\w*)$/))){
+      const key = last.ans ? 'b' : 'a';
+      last[key] += '\n```' + m[2]; fence = { indent: m[1].length, key }; continue;
+    }
+    if (last && last.k === 'Q' && !last.ans && (m = line.match(/^ {2,}- 답:\s*(.*)/))){ last.b = m[1]; last.ans = true; continue; }
+    if (last && (m = line.match(/^ {2,}- (.*)/))){ last.b += '\n' + m[1]; continue; }
+    if ((m = line.match(/^- \*\*(.+?)\*\* — (.*)/))){ last = { k: 'T', a: m[1], b: m[2], ans: true }; g.items.push(last); continue; }
+    if ((m = line.match(/^- Q: (.+?) — (.*)/))){ last = { k: 'Q', a: m[1], b: m[2], ans: true }; g.items.push(last); continue; }
+    if ((m = line.match(/^- Q: (.+)/))){ last = { k: 'Q', a: m[1], b: '', ans: false }; g.items.push(last); continue; }
     console.warn('읽지 못한 줄:', line);
   }
+  out.forEach(g => g.items.forEach(it => {
+    if (it.k !== 'N' && !it.ans) console.warn('답이 없는 문제:', it.a);
+    if (it.b) it.b = it.b.replace(/^\n+/, '');
+  }));
   return out;
 }
 async function loadDecks(){
@@ -37,7 +58,12 @@ const revealed = new Set();
 let total = 0;
 
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+// ```lang ... ``` 블록은 <pre>, 나머지는 인라인 서식
+const fmt = s => s.split(/(```\w*\n[\s\S]*?\n```)/).map(part => {
+  const m = part.match(/^```(\w*)\n([\s\S]*?)\n```$/);
+  return m ? `<pre class="code"><code>${esc(m[2])}</code></pre>` : inline(part.replace(/^\n|\n$/g, ''));
+}).join('');
 const flagSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 
 function build(){
@@ -55,7 +81,6 @@ function build(){
     }
     const el = document.createElement('section');
     el.id = 's' + si;
-    if (sec.loose) el.classList.add('loose');
     el.innerHTML = `<h3>${fmt(sec.t)}</h3>`;
     const g = document.createElement('div'); g.className = 'grid';
     let cnt = 0;
@@ -64,7 +89,7 @@ function build(){
       if (it.k === 'T' || it.k === 'Q'){
         cnt++; total++;
         const c = document.createElement('div');
-        c.className = 'card hide' + (it.k === 'Q' ? ' q' : '');
+        c.className = 'card hide' + (it.k === 'Q' ? ' q' : '') + ((it.a + it.b).includes('```') ? ' wide' : '');
         c.tabIndex = 0; c.dataset.id = id; c.dataset.k = it.k;
         c.dataset.text = (it.a + ' ' + it.b + ' ' + sec.t + ' ' + sec.ch).toLowerCase();
         c.innerHTML =
@@ -76,22 +101,11 @@ function build(){
         g.appendChild(c);
       } else if (it.k === 'N'){
         const n = document.createElement('div'); n.className = 'note'; n.innerHTML = fmt(it.a); g.appendChild(n);
-      } else if (it.k === 'img'){
-        const f = document.createElement('div'); f.className = 'figure';
-        f.innerHTML = `<details><summary>그림 보기 — ${esc(it.cap)}</summary><img loading="lazy" alt="${esc(it.cap)}" src="${it.src}"></details>`;
-        g.appendChild(f);
-      } else if (it.k === 'grid'){
-        const t = document.createElement('div'); t.className = 'tbl';
-        t.innerHTML = '<table><thead><tr>' + it.head.map(h => `<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>' +
-          it.rows.map(r => '<tr>' + r.map((v, ci) => ci === 0 ? `<td><b>${esc(v)}</b></td>`
-            : `<td class="cell hide"><span class="real">${esc(v)}</span><span class="mask">?</span></td>`).join('') + '</tr>').join('') +
-          '</tbody></table>';
-        g.appendChild(t);
       }
     });
     el.appendChild(g); main.appendChild(el);
     const a = document.createElement('a');
-    a.href = '#s' + si; if (sec.loose) a.className = 'loose';
+    a.href = '#s' + si;
     a.innerHTML = `${fmt(sec.t)}<span class="cnt">${cnt || ''}</span>`;
     a.addEventListener('click', closeToc);
     toc.appendChild(a);
@@ -137,7 +151,7 @@ function applyFilter(){
       const ok = (!q || c.dataset.text.includes(q)) && (!onlyFlag || c.classList.contains('flag'));
       c.classList.toggle('hidden', !ok); if (ok) shown++;
     });
-    sec.querySelectorAll('.note,.figure,.tbl').forEach(n => n.classList.toggle('hidden', !!filtering));
+    sec.querySelectorAll('.note').forEach(n => n.classList.toggle('hidden', !!filtering));
     sec.classList.toggle('hidden', filtering && !shown);
     if (!filtering || shown) any = true;
   });
@@ -159,8 +173,6 @@ $('#main').addEventListener('click', e => {
     c.classList.contains('flag') ? flags.add(c.dataset.id) : flags.delete(c.dataset.id);
     store.set('flags', [...flags]); e.stopPropagation(); return;
   }
-  const cell = e.target.closest('td.cell'); if (cell){ cell.classList.toggle('hide'); return; }
-  if (e.target.closest('details')) return;
   const c = e.target.closest('.card');
   if (c && !window.getSelection().toString()) setRevealed(c, c.classList.contains('hide'));
 });
@@ -174,8 +186,8 @@ document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click'
   paintAll();
 }));
 const vis = () => [...document.querySelectorAll('.card:not(.hidden)')].filter(c => !c.closest('section.hidden'));
-$('#allBtn').addEventListener('click', () => { vis().forEach(c => setRevealed(c, true)); document.querySelectorAll('td.cell').forEach(t => t.classList.remove('hide')); });
-$('#resetBtn').addEventListener('click', () => { document.querySelectorAll('.card').forEach(c => setRevealed(c, false)); document.querySelectorAll('td.cell').forEach(t => t.classList.add('hide')); });
+$('#allBtn').addEventListener('click', () => { vis().forEach(c => setRevealed(c, true)); });
+$('#resetBtn').addEventListener('click', () => { document.querySelectorAll('.card').forEach(c => setRevealed(c, false)); });
 ['flagBtn'].forEach(id => $('#'+id).addEventListener('click', e => {
   const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); applyFilter();
 }));
