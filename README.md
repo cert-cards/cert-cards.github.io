@@ -4,9 +4,9 @@
 
 **사이트: https://cert-cards.github.io**
 
-| 자격증 | 카드 | 바로가기 | 데이터 |
-|---|---|---|---|
-| 정보처리기사 실기 | 13과목 · 926장 (C·Java·Python 코드 문제 60개 포함) | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
+| 자격증 | 바로가기 | 데이터 |
+|---|---|---|
+| 정보처리기사 실기 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
 
 ## 쓰는 법
 
@@ -44,13 +44,43 @@
 - 코드는 백틱으로 감쌉니다. 코드 읽기 문제의 답은 실제로 실행한 출력과 같아야 합니다. 여러 줄 답은 `- 답:` 아래에 네 칸 들여쓴 ```` ```text ```` 블록으로 씁니다.
 
 ```
-index.html                 첫 화면
-info-processing/index.html 자격증 페이지 (불러올 파일 목록만 있음)
-assets/                    공용 화면 코드 (app.js · cards.css · home.css)
-data/<자격증>/NN-*.md      카드 데이터
+index.html                  첫 화면 (자격증 목록은 data/decks.json에서 자동으로)
+<자격증>/index.html          자격증 페이지 (제목과 deck 이름만 있음)
+assets/                     공용 화면 코드 (app.js · cards.css · home.js · home.css)
+data/decks.json             첫 화면에 보일 자격증 순서
+data/<자격증>/deck.json      제목 · 안내 문구 · 파일 목록
+data/<자격증>/NN-*.md        카드 데이터 (파일 하나 = 과목 하나, 이름 순서가 과목 순서)
 ```
 
 로컬에서 볼 때는 파일을 직접 열지 말고 서버를 띄웁니다: `python3 -m http.server`
+
+## 자격증 추가하는 법
+
+예: 정보보안기사를 `security-engineer`라는 이름으로 추가할 때.
+
+1. **카드 쓰기** — `data/security-engineer/`에 과목별 Markdown(`01-....md`, `02-....md` …)과 `deck.json`을 만든다.
+
+   ```json
+   {
+     "title": "정보보안기사 실기",
+     "summary": "",
+     "notes": ["비공식 학습 자료입니다."],
+     "files": ["01-system.md", "02-network.md"]
+   }
+   ```
+
+   `files` 순서가 과목 순서다. `summary`는 첫 화면에 짧게 붙는 설명(비워도 된다).
+
+2. **페이지 만들기** — `info-processing/index.html`을 `security-engineer/index.html`로 복사하고 두 군데만 바꾼다.
+
+   ```html
+   <title>정보보안기사 실기 플래시카드</title>
+   <script>window.CERT = { deck: 'security-engineer' };</script>
+   ```
+
+3. **목록에 올리기** — `data/decks.json`에 `"security-engineer"`를 추가한다. 위 README 표에도 한 줄 넣는다.
+
+화면(상단 바·퀴즈·목차)은 `assets/app.js`가 그리므로 자격증마다 따로 고칠 것이 없다. 과목 수·카드 수도 첫 화면이 파일에서 직접 센다.
 
 ## 알림
 

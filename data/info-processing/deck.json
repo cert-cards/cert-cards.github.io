@@ -1,0 +1,24 @@
+{
+  "title": "정보처리기사 실기",
+  "summary": "C·Java·Python 코드 문제 포함",
+  "notes": [
+    "정보처리기사 실기 출제기준의 과목 순서로 정리한 비공식 학습 자료입니다.",
+    "최신 출제기준과 시험 일정은 Q-Net에서 확인하세요."
+  ],
+  "storageKey": "jcgo",
+  "files": [
+    "01-methodology.md",
+    "02-design.md",
+    "03-ui.md",
+    "04-database.md",
+    "05-sql.md",
+    "06-integration.md",
+    "07-testing.md",
+    "08-os-network.md",
+    "09-security.md",
+    "10-new-tech.md",
+    "11-c.md",
+    "12-java.md",
+    "13-python.md"
+  ]
+}

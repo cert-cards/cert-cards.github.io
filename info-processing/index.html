@@ -8,63 +8,7 @@
 <link rel="stylesheet" href="../assets/cards.css">
 </head>
 <body>
-<div class="bar"><div class="bar-in">
-  <div class="row">
-    <button class="icon-btn" id="tocBtn" aria-label="목차 열기">☰</button>
-    <h1>정보처리기사 실기 플래시카드</h1>
-    <span class="prog" id="prog">불러오는 중</span>
-    <button class="icon-btn" id="themeBtn" aria-label="다크 모드 전환" title="다크 모드 전환">◐</button>
-  </div>
-  <div class="row ctl">
-    <div class="seg" role="group" aria-label="가릴 쪽">
-      <button data-mode="term" aria-pressed="true">용어 가리기</button>
-      <button data-mode="desc" aria-pressed="false">설명 가리기</button>
-    </div>
-    <button class="btn" id="flagBtn" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><path d="M6 3h12v18l-6-4-6 4z"/></svg> 다시 볼 것</button>
-    <button class="btn quiz" id="quizBtn">퀴즈</button>
-    <button class="btn" id="allBtn">전체 펼치기</button>
-    <button class="btn" id="resetBtn">다시 가리기</button>
-    <input class="search" id="q" type="search" placeholder="검색 (용어·설명)" autocomplete="off">
-  </div>
-  <div class="pbar"><i id="pfill"></i></div>
-</div></div>
-
-<div class="qz" id="qz" hidden role="dialog" aria-modal="true" aria-label="퀴즈">
-  <div class="qz-top">
-    <span class="cnt" id="qzCnt"></span>
-    <button class="icon-btn" id="qzFlag" aria-label="다시 볼 것 표시" title="다시 볼 것"></button>
-    <button class="btn" id="qzClose">닫기</button>
-  </div>
-  <div class="qz-stage"><div class="qz-card" id="qzCard" tabindex="0"></div></div>
-  <div class="qz-hint" id="qzHint">한 번 누르면 정답 · 한 번 더 누르면 다음 문제</div>
-</div>
-<div class="scrim" id="scrim"></div>
-<div class="wrap">
-  <nav class="toc" id="toc" aria-label="목차"><div class="toc-head">목차 <button class="icon-btn" id="tocClose" aria-label="목차 닫기">✕</button></div></nav>
-  <main id="main"></main>
-</div>
-<footer>카드를 누르면 정답이 보이고, 다시 누르면 가려집니다 · 책갈피 표시는 이 브라우저에만 저장됩니다<br>정보처리기사 실기 출제기준의 과목 순서로 정리한 비공식 학습 자료입니다.<br>최신 출제기준과 시험 일정은 Q-Net에서 확인하세요.<br><a href="../">다른 자격증</a> · <a href="https://github.com/cert-cards/cert-cards.github.io/issues">틀린 내용 제보</a></footer>
-
-<script>
-window.CERT = {
-  key: 'jcgo',
-  files: [
-    "../data/info-processing/01-methodology.md",
-    "../data/info-processing/02-design.md",
-    "../data/info-processing/03-ui.md",
-    "../data/info-processing/04-database.md",
-    "../data/info-processing/05-sql.md",
-    "../data/info-processing/06-integration.md",
-    "../data/info-processing/07-testing.md",
-    "../data/info-processing/08-os-network.md",
-    "../data/info-processing/09-security.md",
-    "../data/info-processing/10-new-tech.md",
-    "../data/info-processing/11-c.md",
-    "../data/info-processing/12-java.md",
-    "../data/info-processing/13-python.md"
-  ]
-};
-</script>
+<script>window.CERT = { deck: 'info-processing' };</script>
 <script src="../assets/app.js"></script>
 </body>
 </html>

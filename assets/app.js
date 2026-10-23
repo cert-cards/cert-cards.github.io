@@ -1,5 +1,49 @@
-// 카드 데이터는 data/<자격증>/*.md 에 있다. 페이지가 window.CERT = { files: [...] } 로 목록을 준다.
+// 자격증 페이지는 window.CERT = { deck: '<id>' } 만 준다.
+// 제목·안내 문구·파일 목록은 data/<id>/deck.json, 카드는 그 파일들(Markdown)에 있다.
+const DECK = window.CERT.deck;
+const BASE = `../data/${DECK}/`;
 let DATA = [];
+let INFO = {};
+
+// 화면 뼈대 — 모든 자격증이 같다
+document.body.insertAdjacentHTML('afterbegin', `
+<div class="bar"><div class="bar-in">
+  <div class="row">
+    <button class="icon-btn" id="tocBtn" aria-label="목차 열기">☰</button>
+    <h1 id="deckTitle"></h1>
+    <span class="prog" id="prog">불러오는 중</span>
+    <button class="icon-btn" id="themeBtn" aria-label="다크 모드 전환" title="다크 모드 전환">◐</button>
+  </div>
+  <div class="row ctl">
+    <div class="seg" role="group" aria-label="가릴 쪽">
+      <button data-mode="term" aria-pressed="true">용어 가리기</button>
+      <button data-mode="desc" aria-pressed="false">설명 가리기</button>
+    </div>
+    <button class="btn" id="flagBtn" aria-pressed="false"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px"><path d="M6 3h12v18l-6-4-6 4z"/></svg> 다시 볼 것</button>
+    <button class="btn quiz" id="quizBtn">퀴즈</button>
+    <button class="btn" id="allBtn">전체 펼치기</button>
+    <button class="btn" id="resetBtn">다시 가리기</button>
+    <input class="search" id="q" type="search" placeholder="검색 (용어·설명)" autocomplete="off">
+  </div>
+  <div class="pbar"><i id="pfill"></i></div>
+</div></div>
+
+<div class="qz" id="qz" hidden role="dialog" aria-modal="true" aria-label="퀴즈">
+  <div class="qz-top">
+    <span class="cnt" id="qzCnt"></span>
+    <button class="icon-btn" id="qzFlag" aria-label="다시 볼 것 표시" title="다시 볼 것"></button>
+    <button class="btn" id="qzClose">닫기</button>
+  </div>
+  <div class="qz-stage"><div class="qz-card" id="qzCard" tabindex="0"></div></div>
+  <div class="qz-hint" id="qzHint">한 번 누르면 정답 · 한 번 더 누르면 다음 문제</div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="목차"><div class="toc-head">목차 <button class="icon-btn" id="tocClose" aria-label="목차 닫기">✕</button></div></nav>
+  <main id="main"></main>
+</div>
+<footer>카드를 누르면 정답이 보이고, 다시 누르면 가려집니다 · 책갈피 표시는 이 브라우저에만 저장됩니다<span id="deckNotes"></span><br><a href="../">다른 자격증</a> · <a href="https://github.com/cert-cards/cert-cards.github.io/issues">틀린 내용 제보</a></footer>
+`);
 
 // Markdown 한 파일 → 과목 1개의 그룹 목록
 //   # 과목   ## 그룹   > 메모
@@ -41,19 +85,27 @@ function parseDeck(md){
   }));
   return out;
 }
+const getText = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); });
 async function loadDecks(){
-  const texts = await Promise.all(window.CERT.files.map(f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); })));
+  INFO = JSON.parse(await getText(BASE + 'deck.json'));
+  KEY = INFO.storageKey || DECK;
+  mode = store.get('mode', 'term');
+  flags = new Set(store.get('flags', []));
+  $('#deckTitle').textContent = INFO.title + ' 플래시카드';
+  $('#deckNotes').innerHTML = (INFO.notes || []).map(n => '<br>' + esc(n)).join('');
+  const texts = await Promise.all(INFO.files.map(f => getText(BASE + f)));
   texts.forEach((md, i) => {
     parseDeck(md).forEach(g => { g.ch = (i + 1) + '. ' + g.ch; DATA.push(g); });
   });
 }
 const $ = s => document.querySelector(s);
 const store = {
-  get(k, d){ try{ const v = localStorage.getItem((window.CERT.key || 'cards') + ':' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem((window.CERT.key || 'cards') + ':' + k, JSON.stringify(v)); }catch(e){} }
+  get(k, d){ try{ const v = localStorage.getItem(KEY + ':' + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(KEY + ':' + k, JSON.stringify(v)); }catch(e){} }
 };
-let mode = store.get('mode', 'term');
-let flags = new Set(store.get('flags', []));
+let KEY = DECK;          // 책갈피·모드 저장 이름 (deck.json storageKey가 있으면 그것)
+let mode = 'term';
+let flags = new Set();
 const revealed = new Set();
 let total = 0;
 
@@ -248,10 +300,11 @@ document.addEventListener('keydown', e => {
 });
 
 const root = document.documentElement;
-const savedTheme = store.get('theme', null); if (savedTheme) root.dataset.theme = savedTheme;
+const themeStore = { get(){ try{ return localStorage.getItem('cert-cards:theme'); }catch(e){ return null; } }, set(v){ try{ localStorage.setItem('cert-cards:theme', v); }catch(e){} } };
+const savedTheme = themeStore.get(); if (savedTheme) root.dataset.theme = savedTheme;
 $('#themeBtn').addEventListener('click', () => {
   const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  root.dataset.theme = dark ? 'light' : 'dark'; store.set('theme', root.dataset.theme);
+  root.dataset.theme = dark ? 'light' : 'dark'; themeStore.set(root.dataset.theme);
 });
 
 loadDecks().then(() => {
