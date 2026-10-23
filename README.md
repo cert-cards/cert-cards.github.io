@@ -1,12 +1,12 @@
 # cert-cards
 
-자격증 실기 대비 정답 가리기 플래시카드입니다.
+자격증 대비 정답 가리기 플래시카드입니다.
 
 **사이트: https://cert-cards.github.io**
 
 | 자격증 | 바로가기 | 데이터 |
 |---|---|---|
-| 정보처리기사 실기 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
+| 정보처리기사 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
 
 ## 쓰는 법
 
@@ -75,7 +75,7 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
 
    ```json
    {
-     "title": "정보보안기사 실기",
+     "title": "정보보안기사",
      "summary": "",
      "notes": ["비공식 학습 자료입니다."],
      "files": ["01-system.md", "02-network.md"]
@@ -87,7 +87,7 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
 2. **페이지 만들기** — `info-processing/index.html`을 `security-engineer/index.html`로 복사하고 두 군데만 바꾼다.
 
    ```html
-   <title>정보보안기사 실기 플래시카드</title>
+   <title>정보보안기사 플래시카드</title>
    <script>window.CERT = { deck: 'security-engineer' };</script>
    ```
 
