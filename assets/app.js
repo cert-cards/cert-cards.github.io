@@ -305,7 +305,18 @@ function alertEmpty(){ const b = $('#quizBtn'); b.textContent = '카드 없음';
 $('#quizBtn').addEventListener('click', qzOpen);
 $('#qzClose').addEventListener('click', qzClose);
 $('#qzPrev').addEventListener('click', () => { qzPrev(); $('#qzCard').focus(); });
-$('#qzCard').addEventListener('click', qzStep);
+// 글자를 드래그·더블클릭해 고르는 중이면 넘기지 않는다 (복사하려는 것)
+const selectingIn = el => { const s = window.getSelection(); return s && !s.isCollapsed && el.contains(s.anchorNode); };
+// 정답이 보이는 상태의 한 번 클릭은 0.25초 기다렸다가 넘긴다 — 그 사이 두 번째 클릭(더블클릭으로 단어 고르기)이 오면 취소
+let qzTimer = null;
+$('#qzCard').addEventListener('click', e => {
+  const card = e.currentTarget;
+  if (e.detail > 1){ clearTimeout(qzTimer); qzTimer = null; return; }
+  if (selectingIn(card)) return;
+  if (!qz.shown){ qzStep(); return; }
+  clearTimeout(qzTimer);
+  qzTimer = setTimeout(() => { qzTimer = null; if (!selectingIn(card)) qzStep(); }, 250);
+});
 $('#qzFlag').addEventListener('click', () => {
   const c = qz.cur; c.classList.toggle('flag');
   c.classList.contains('flag') ? flags.add(c.dataset.id) : flags.delete(c.dataset.id);
@@ -313,6 +324,7 @@ $('#qzFlag').addEventListener('click', () => {
 });
 document.addEventListener('keydown', e => {
   if ($('#qz').hidden) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;   // ⌘C·Ctrl+C 같은 단축키는 건드리지 않는다
   if (e.key === 'Escape'){ qzClose(); }
   else if (e.key === 'ArrowLeft'){ e.preventDefault(); qzPrev(); }
   else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight'){ if (e.target.tagName !== 'BUTTON'){ e.preventDefault(); qzStep(); } }
