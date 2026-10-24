@@ -165,8 +165,9 @@
 
 ## 배열·제어문
 
-- Q: `int[] a = new int[3];`처럼 만든 배열의 원소 초기값은? — `0`
-  - boolean 배열은 `false`, 참조형(String 등) 배열은 `null`로 채워진다.
+- Q: `int[] a = new int[3];`처럼 만든 배열의 원소 초기값은? — 원소마다 `0`, 즉 a는 `{0, 0, 0}`
+  - 다른 타입의 기본값: `double`은 `0.0`, `char`는 `'\u0000'`, `boolean`은 `false`, 참조형(String 등)은 `null`
+  - 내용을 찍으려면 `Arrays.toString(a)` → `[0, 0, 0]` (그냥 `println(a)`는 `[I@…` 같은 문자열이 나온다)
 - Q: 배열의 범위를 벗어난 인덱스에 접근하면? — `ArrayIndexOutOfBoundsException`이 발생한다.
 - **폴스루 (Fall-through)** — switch에서 `break` 없이 끝난 case 다음의 case 문장들이 조건 검사 없이 이어서 실행되는 현상.
 - Q: 라벨 없는 `break`와 `continue`의 차이는? — `break`는 가장 안쪽 반복문(또는 switch)을 빠져나가고, `continue`는 가장 안쪽 반복문의 다음 회차로 넘어간다.
