@@ -113,6 +113,7 @@ pre.code code{background:none;padding:0;font-size:inherit;border-radius:0}
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .qz[hidden]{display:none}
 .qz-top{display:flex;align-items:center;gap:10px;max-width:760px;width:100%;margin:0 auto}
+.qz-top .btn:disabled{opacity:.4;cursor:default}
 .qz-top .cnt{font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums;flex:1}
 .qz-stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:16px 0}
 .qz-card{width:100%;max-width:760px;max-height:100%;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;

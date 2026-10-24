@@ -30,6 +30,7 @@ document.body.insertAdjacentHTML('afterbegin', `
 
 <div class="qz" id="qz" hidden role="dialog" aria-modal="true" aria-label="퀴즈">
   <div class="qz-top">
+    <button class="btn" id="qzPrev" aria-label="이전 문제">← 이전</button>
     <span class="cnt" id="qzCnt"></span>
     <button class="icon-btn" id="qzFlag" aria-label="다시 볼 것 표시" title="다시 볼 것"></button>
     <button class="btn" id="qzClose">닫기</button>
@@ -248,7 +249,9 @@ $('#tocBtn').addEventListener('click', () => { $('#toc').classList.add('open'); 
 $('#tocClose').addEventListener('click', closeToc);
 $('#scrim').addEventListener('click', closeToc);
 // ── 퀴즈: 지금 화면에 보이는(필터가 걸려 있으면 걸린) 카드에서 무작위로 끝없이
-const qz = { pool: [], deck: [], cur: null, shown: false, n: 0, last: null };
+// hist: 지금까지 낸 카드 순서. pos: 지금 보는 위치. 이전으로 갔다가 다음을 누르면 기록을 따라 앞으로 가고, 끝에 닿으면 새로 뽑는다.
+const qz = { pool: [], deck: [], cur: null, shown: false, last: null, hist: [], pos: -1, base: 0 };
+const QZ_HIST_MAX = 300;
 function qzShuffle(){
   const d = qz.pool.slice();
   for (let i = d.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [d[i], d[j]] = [d[j], d[i]]; }
@@ -256,8 +259,21 @@ function qzShuffle(){
   qz.deck = d;
 }
 function qzNext(){
-  if (!qz.deck.length) qzShuffle();
-  qz.cur = qz.deck.pop(); qz.last = qz.cur; qz.shown = false; qz.n++;
+  if (qz.pos < qz.hist.length - 1){
+    qz.pos++;
+  } else {
+    if (!qz.deck.length) qzShuffle();
+    qz.last = qz.deck.pop();
+    qz.hist.push(qz.last);
+    if (qz.hist.length > QZ_HIST_MAX){ qz.hist.shift(); qz.base++; }
+    qz.pos = qz.hist.length - 1;
+  }
+  qz.cur = qz.hist[qz.pos]; qz.shown = false;
+  qzRender();
+}
+function qzPrev(){
+  if (qz.pos <= 0) return;
+  qz.pos--; qz.cur = qz.hist[qz.pos]; qz.shown = false;
   qzRender();
 }
 function qzRender(){
@@ -269,7 +285,8 @@ function qzRender(){
   const part = key => key === hp && !qz.shown ? `<span class="qz-hole">${label}</span>` : `<span class="${key === hp ? 'qz-ans' : ''}">${fmt(it[key])}</span>`;
   box.className = 'qz-card' + (c.dataset.k === 'Q' ? ' q' : '') + (qz.shown ? ' shown' : '');
   box.innerHTML = `<div class="qz-where">${esc(where)}</div><div class="qz-a">${part('a')}</div><div class="qz-b">${part('b')}</div>`;
-  $('#qzCnt').textContent = `${qz.n}번째 · ${qz.pool.length}장 중에서`;
+  $('#qzCnt').textContent = `${qz.base + qz.pos + 1}번째 · ${qz.pool.length}장 중에서`;
+  $('#qzPrev').disabled = qz.pos <= 0;
   $('#qzHint').textContent = qz.shown ? '한 번 더 누르면 다음 문제' : '누르면 정답';
   const f = c.classList.contains('flag');
   $('#qzFlag').innerHTML = flagSvg; $('#qzFlag').style.color = f ? 'var(--flag)' : '';
@@ -279,7 +296,7 @@ function qzStep(){ if (!qz.shown){ qz.shown = true; qzRender(); } else qzNext();
 function qzOpen(){
   qz.pool = vis();
   if (!qz.pool.length){ alertEmpty(); return; }
-  qz.deck = []; qz.n = 0; qz.last = null;
+  qz.deck = []; qz.last = null; qz.hist = []; qz.pos = -1; qz.base = 0;
   $('#qz').hidden = false; document.body.style.overflow = 'hidden';
   qzNext(); $('#qzCard').focus();
 }
@@ -287,6 +304,7 @@ function qzClose(){ $('#qz').hidden = true; document.body.style.overflow = ''; }
 function alertEmpty(){ const b = $('#quizBtn'); b.textContent = '카드 없음'; setTimeout(() => b.textContent = '퀴즈', 1500); }
 $('#quizBtn').addEventListener('click', qzOpen);
 $('#qzClose').addEventListener('click', qzClose);
+$('#qzPrev').addEventListener('click', () => { qzPrev(); $('#qzCard').focus(); });
 $('#qzCard').addEventListener('click', qzStep);
 $('#qzFlag').addEventListener('click', () => {
   const c = qz.cur; c.classList.toggle('flag');
@@ -296,6 +314,7 @@ $('#qzFlag').addEventListener('click', () => {
 document.addEventListener('keydown', e => {
   if ($('#qz').hidden) return;
   if (e.key === 'Escape'){ qzClose(); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); qzPrev(); }
   else if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight'){ if (e.target.tagName !== 'BUTTON'){ e.preventDefault(); qzStep(); } }
 });
 
