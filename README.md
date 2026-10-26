@@ -98,7 +98,7 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
 
 ## 알림
 
-- 비공식 학습 자료입니다. 시험 시행 기관과 관련이 없습니다. 최신 출제기준과 일정은 Q-Net에서 확인하세요.
+- 비공식 학습 자료입니다. 각 시험의 시행 기관과 관련이 없습니다. 최신 출제기준과 일정은 시행 기관의 공지를 확인하세요.
 - 틀린 내용은 [Issues](https://github.com/cert-cards/cert-cards.github.io/issues)로 알려 주세요.
 
 ## 라이선스
