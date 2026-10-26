@@ -1,0 +1,27 @@
+{
+  "title": "투자자산운용사",
+  "summary": "계산 문제 포함",
+  "unitLabel": "단원",
+  "notes": [
+    "투자자산운용사 시험 범위를 세부과목별로 정리한 비공식 학습 자료입니다.",
+    "법규·세제의 수치는 개정될 수 있으니 최신 기본서와 시행 기관 공지를 함께 확인하세요."
+  ],
+  "files": [
+    "01-tax.md",
+    "02-products.md",
+    "03-real-estate.md",
+    "04-alternative.md",
+    "05-global.md",
+    "06-analysis.md",
+    "07-risk.md",
+    "08-ethics.md",
+    "09-law.md",
+    "10-kofia.md",
+    "11-equity.md",
+    "12-bond.md",
+    "13-derivatives.md",
+    "14-performance.md",
+    "15-macro.md",
+    "16-portfolio.md"
+  ]
+}

@@ -7,7 +7,7 @@ async function deckCard(id){
   const info = await get(`data/${id}/deck.json`, 'json');
   const texts = await Promise.all(info.files.map(f => get(`data/${id}/${f}`)));
   const cards = texts.reduce((n, md) => n + md.split('\n').filter(l => l.startsWith('- ')).length, 0);
-  const meta = [`${info.files.length}과목`, `${cards}장`, info.summary].filter(Boolean).join(' · ');
+  const meta = [`${info.files.length}${info.unitLabel || '과목'}`, `${cards}장`, info.summary].filter(Boolean).join(' · ');
   return `<a class="deck" href="${esc(id)}/">
       <div>
         <div class="name">${esc(info.title)}</div>

@@ -6,6 +6,7 @@
 
 | 자격증 | 바로가기 | 데이터 |
 |---|---|---|
+| 투자자산운용사 | [investment-manager](https://cert-cards.github.io/investment-manager/) | [data/investment-manager](data/investment-manager) |
 | 정보처리기사 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
 
 ## 쓰는 법
@@ -36,11 +37,15 @@
   - 답: `7`
   - 해설 한 줄 (선택)
 
+- Q: 기대수익률 12%, 무위험 3%, 표준편차 15%일 때 샤프지수는? — `0.6`
+  - 검산: `(12 - 3) / 15` = 0.6
+
 > 가리지 않는 메모
 ```
 
 - 용어와 정의 사이는 ` — `(앞뒤 공백이 있는 줄표)입니다.
 - `- **…**` 줄은 용어 카드, `- Q:` 줄은 문답 카드가 됩니다.
+- 계산 문제에는 `- 검산: `식` = 값`을 답니다. 식은 숫자·사칙연산·`sqrt log exp` 등만 쓰고, 값은 단위 없는 숫자이며 답 안에 그대로 들어 있어야 합니다. 화면에는 풀이 줄로 보입니다.
 - 코드는 백틱으로 감쌉니다. 코드 읽기 문제의 답은 실제로 실행한 출력과 같아야 합니다. 여러 줄 답은 `- 답:` 아래에 네 칸 들여쓴 ```` ```text ```` 블록으로 씁니다.
 
 ```
@@ -66,6 +71,7 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
 - **형식**: 위 규칙에 맞지 않는 줄, 답이 없는 문제, 닫히지 않은 코드 블록, 정의에 용어가 그대로 들어간 카드
 - **덱 일치**: `decks.json` · `deck.json` · 페이지 · 폴더 안 파일이 서로 맞는지
 - **코드 답**: 코드 읽기 문제를 실제로 컴파일·실행한 출력이 「답」과 같은지 (C는 미정의 동작 검사를 켜고 경고 0개)
+- **검산**: 계산 문제의 검산 식을 계산한 값이 적힌 값·답과 같은지
 
 ## 자격증 추가하는 법
 
@@ -77,12 +83,13 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
    {
      "title": "정보보안기사",
      "summary": "",
+     "unitLabel": "과목",
      "notes": ["비공식 학습 자료입니다."],
      "files": ["01-system.md", "02-network.md"]
    }
    ```
 
-   `files` 순서가 과목 순서다. `summary`는 첫 화면에 짧게 붙는 설명(비워도 된다).
+   `files` 순서가 과목 순서다. `summary`는 첫 화면에 짧게 붙는 설명(비워도 된다). `unitLabel`은 과목 머리의 이름(기본 「과목」, 투자자산운용사는 「단원」).
 
 2. **페이지 만들기** — `info-processing/index.html`을 `security-engineer/index.html`로 복사하고 두 군데만 바꾼다.
 

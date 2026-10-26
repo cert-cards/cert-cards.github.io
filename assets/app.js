@@ -127,7 +127,7 @@ function build(){
       lastCh = sec.ch;
       const m = sec.ch.match(/^(\d+)\.\s*(.*)$/);
       const h = document.createElement('div'); h.className = 'chapter'; h.id = 'c' + si;
-      h.innerHTML = `<div class="no">과목 ${m ? m[1].padStart(2,'0') : ''}</div><h2>${esc(m ? m[2] : sec.ch)}</h2>`;
+      h.innerHTML = `<div class="no">${esc(INFO.unitLabel || '과목')} ${m ? m[1].padStart(2,'0') : ''}</div><h2>${esc(m ? m[2] : sec.ch)}</h2>`;
       main.appendChild(h);
       const ta = document.createElement('a'); ta.className = 'ch'; ta.href = '#c' + si; ta.textContent = sec.ch;
       ta.addEventListener('click', closeToc); toc.appendChild(ta);

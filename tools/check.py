@@ -7,10 +7,13 @@
 1. 형식      — Markdown이 assets/app.js 파서가 읽는 규칙을 지키나
 2. 덱 일치   — decks.json · deck.json · 페이지 · 파일 목록이 서로 맞나
 3. 코드 답   — 코드 읽기 문제를 실제로 실행한 출력이 「답」과 같나
+4. 검산      — 계산 문제의 `- 검산: `식` = 값`을 계산해 값·답과 맞나
 
 문제가 있으면 종료 코드 1. GitHub Actions에서는 파일·줄 위치가 주석으로 붙는다.
 """
+import ast
 import json
+import math
 import os
 import re
 import shutil
@@ -47,6 +50,7 @@ Q_CODE = re.compile(r"^- Q: (.+)$")
 FENCE = re.compile(r"^( {2,})```(\w*)$")
 ANSWER = re.compile(r"^ {2,}- 답:\s*(.*)$")
 EXTRA = re.compile(r"^ {2,}- (.*)$")
+CALC = re.compile(r"^ {2,}- 검산: `([^`]+)` = (.+)$")
 LANGS = {"c", "java", "python", "text"}
 
 
@@ -97,6 +101,9 @@ def parse(path):
         elif cur and cur["kind"] == "Q" and not cur["ans"] and (m := ANSWER.match(line)):
             cur["ans"] = True
             cur["answer"] = m[1].strip()
+            continue
+        elif cur and (m := CALC.match(line)):
+            cur.setdefault("calc", []).append((m[1], m[2].strip(), no))
             continue
         elif cur and EXTRA.match(line):
             continue
@@ -238,6 +245,63 @@ def check_code(path, cards):
     return n
 
 
+# ── 4. 검산 ─────────────────────────────────────────────────────────────
+_FUNCS = {"sqrt": math.sqrt, "log": math.log, "log10": math.log10, "exp": math.exp,
+          "abs": abs, "round": round, "min": min, "max": max}
+_NAMES = {"e": math.e, "pi": math.pi}
+_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod, ast.FloorDiv, ast.USub, ast.UAdd)
+
+
+def safe_eval(expr):
+    """숫자·사칙연산·거듭제곱·허용 함수만 계산한다."""
+    def ev(n):
+        if isinstance(n, ast.Expression):
+            return ev(n.body)
+        if isinstance(n, ast.Constant) and isinstance(n.value, (int, float)):
+            return n.value
+        if isinstance(n, ast.BinOp) and isinstance(n.op, _OPS):
+            a, b = ev(n.left), ev(n.right)
+            return {ast.Add: lambda: a + b, ast.Sub: lambda: a - b, ast.Mult: lambda: a * b,
+                    ast.Div: lambda: a / b, ast.Pow: lambda: a ** b, ast.Mod: lambda: a % b,
+                    ast.FloorDiv: lambda: a // b}[type(n.op)]()
+        if isinstance(n, ast.UnaryOp) and isinstance(n.op, (ast.USub, ast.UAdd)):
+            v = ev(n.operand)
+            return -v if isinstance(n.op, ast.USub) else v
+        if isinstance(n, ast.Name) and n.id in _NAMES:
+            return _NAMES[n.id]
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in _FUNCS and not n.keywords:
+            return _FUNCS[n.func.id](*[ev(a) for a in n.args])
+        raise ValueError(f"허용하지 않는 식: {ast.dump(n)[:60]}")
+    return ev(ast.parse(expr, mode="eval"))
+
+
+NUM = re.compile(r"^-?\d[\d,]*(\.\d+)?$")
+
+
+def check_calc(path, cards):
+    n = 0
+    for c in cards:
+        for expr, value, line in c.get("calc", []):
+            n += 1
+            v = value.replace(",", "")
+            if not NUM.match(v):
+                fail(f"검산 값 `{value}`은 숫자만 쓴다 (단위·% 없이)", path, line)
+                continue
+            try:
+                got = safe_eval(expr)
+            except Exception as e:  # noqa: BLE001
+                fail(f"검산 식을 계산하지 못했다: {e}", path, line)
+                continue
+            decimals = len(v.split(".")[1]) if "." in v else 0
+            if abs(got - float(v)) > 0.5 * 10 ** -decimals + 1e-9:
+                fail(f"검산 결과가 다르다 — `{expr}` = {got:.6g}, 적힌 값 {value}", path, line)
+                continue
+            answer = re.sub(r"[\s,`]", "", c["b"] or c.get("answer") or "")
+            if v.replace(",", "") not in answer:
+                fail(f"검산 값 {value}이 답 「{c['b'] or c.get('answer')}」에 없다", path, line)
+    return n
+
+
 def main():
     run_code = "--no-code" not in sys.argv
     print("1·2. 덱 일치와 형식")
@@ -250,6 +314,8 @@ def main():
             parsed.append((f, cards))
             total += len(cards)
         print(f"  {did}: 파일 {len(files)}개 · 카드 {total}장")
+    print("4. 검산")
+    print(f"  계산 문제 검산 {sum(check_calc(f, cards) for f, cards in parsed)}개")
     if run_code:
         print("3. 코드 답")
         print(f"  C: {CC or '없음'} · Java: {JAVAC or '없음'} · Python: {sys.executable}")
