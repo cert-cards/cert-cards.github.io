@@ -8,6 +8,7 @@
 |---|---|---|
 | 투자자산운용사 | [investment-manager](https://cert-cards.github.io/investment-manager/) | [data/investment-manager](data/investment-manager) |
 | 정보처리기사 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
+| Azure AI Fundamentals (AI-901) | [azure-ai-fundamentals](https://cert-cards.github.io/azure-ai-fundamentals/) | [data/azure-ai-fundamentals](data/azure-ai-fundamentals) |
 
 ## 쓰는 법
 
@@ -46,7 +47,7 @@
 - 용어와 정의 사이는 ` — `(앞뒤 공백이 있는 줄표)입니다.
 - `- **…**` 줄은 용어 카드, `- Q:` 줄은 문답 카드가 됩니다.
 - 계산 문제에는 `- 검산: `식` = 값`을 답니다. 식은 숫자·사칙연산·`sqrt log exp` 등만 쓰고, 값은 단위 없는 숫자이며 답 안에 그대로 들어 있어야 합니다. 화면에는 풀이 줄로 보입니다.
-- 코드는 백틱으로 감쌉니다. 코드 읽기 문제의 답은 실제로 실행한 출력과 같아야 합니다. 여러 줄 답은 `- 답:` 아래에 네 칸 들여쓴 ```` ```text ```` 블록으로 씁니다.
+- 코드는 백틱으로 감쌉니다. 코드 읽기 문제의 답은 실제로 실행한 출력과 같아야 합니다. 클라우드 SDK 호출처럼 실행할 수 없는 코드는 문제 블록 언어를 `text`로 두면 실행 검사에서 빠집니다. 여러 줄 답은 `- 답:` 아래에 네 칸 들여쓴 ```` ```text ```` 블록으로 씁니다.
 
 ```
 index.html                  첫 화면 (자격증 목록은 data/decks.json에서 자동으로)

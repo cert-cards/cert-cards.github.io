@@ -1,0 +1,19 @@
+{
+  "title": "Azure AI Fundamentals",
+  "summary": "AI-901, SDK 코드 문제 포함",
+  "unitLabel": "단원",
+  "notes": [
+    "Microsoft AI-901(2026년 4월 15일 개정 출제 범위) 기준으로 정리한 비공식 학습 자료입니다.",
+    "Microsoft Foundry의 이름·화면·SDK는 자주 바뀝니다. 시험 전에 Microsoft Learn의 학습 가이드와 문서를 함께 확인하세요."
+  ],
+  "files": [
+    "01-responsible-ai.md",
+    "02-models.md",
+    "03-workloads.md",
+    "04-genai-apps.md",
+    "05-agents.md",
+    "06-text-speech.md",
+    "07-vision.md",
+    "08-content-understanding.md"
+  ]
+}

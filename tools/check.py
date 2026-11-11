@@ -230,6 +230,8 @@ def check_code(path, cards):
     for c in cards:
         if "code" not in c or not c["code"] or not c["ans"]:
             continue
+        if c["lang"] == "text":  # 읽기 전용 코드(예: 클라우드 SDK 호출) — 실행하지 않는다
+            continue
         n += 1
         if c["ansblock"]:
             expect = "\n".join(c["ansblock"])
