@@ -14,5 +14,6 @@
     "04-type3-tests.md",
     "05-type3-regression.md",
     "06-probability.md"
-  ]
+  ],
+  "practice": true
 }

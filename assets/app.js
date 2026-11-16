@@ -1,4 +1,4 @@
-// 자격증 페이지는 window.CERT = { deck: '<id>' } 만 준다.
+// 자격증 페이지는 window.CERT = { deck: '<id>' } 만 준다. Markdown 읽기와 서식(parseDeck·fmt 등)은 deck.js.
 // 제목·안내 문구·파일 목록은 data/<id>/deck.json, 카드는 그 파일들(Markdown)에 있다.
 const DECK = window.CERT.deck;
 const BASE = `../data/${DECK}/`;
@@ -46,47 +46,6 @@ document.body.insertAdjacentHTML('afterbegin', `
 <footer>카드를 누르면 정답이 보이고, 다시 누르면 가려집니다 · 책갈피 표시는 이 브라우저에만 저장됩니다<span id="deckNotes"></span><br><a href="../">다른 자격증</a> · <a href="https://github.com/cert-cards/cert-cards.github.io/issues">틀린 내용 제보</a></footer>
 `);
 
-// Markdown 한 파일 → 과목 1개의 그룹 목록
-//   # 과목   ## 그룹   > 메모
-//   - **용어** — 정의          - Q: 질문 — 답        (들여쓴 "  - " 줄은 보충)
-//   - Q: 질문                  코드 읽기 문제: 아래에 들여쓴 ```코드```, 그다음 "  - 답: …"
-//     ```c                     여러 줄 답은 "  - 답:" 아래에 네 칸 들여쓴 ```text``` 블록
-//     ...
-//     ```
-//     - 답: `7`
-function parseDeck(md){
-  const out = []; let ch = '', g = null, last = null, fence = null;
-  for (const raw of md.split('\n')){
-    const line = raw.replace(/\s+$/, '');
-    if (fence){
-      if (line.trim() === '```'){ last[fence.key] += '\n```'; fence = null; }
-      else last[fence.key] += '\n' + line.slice(Math.min(fence.indent, line.length - line.trimStart().length));
-      continue;
-    }
-    if (!line.trim()) continue;
-    let m;
-    if ((m = line.match(/^# (.+)/))){ ch = m[1].trim(); continue; }
-    if ((m = line.match(/^## (.+)/))){ g = { ch, t: m[1].trim(), items: [] }; out.push(g); last = null; continue; }
-    if (!g){ g = { ch, t: '', items: [] }; out.push(g); }
-    if ((m = line.match(/^> ?(.*)/))){ g.items.push({ k: 'N', a: m[1] }); last = null; continue; }
-    if (last && (m = line.match(/^( {2,})```(\w*)$/))){
-      const key = last.ans ? 'b' : 'a';
-      last[key] += '\n```' + m[2]; fence = { indent: m[1].length, key }; continue;
-    }
-    if (last && last.k === 'Q' && !last.ans && (m = line.match(/^ {2,}- 답:\s*(.*)/))){ last.b = m[1]; last.ans = true; continue; }
-    if (last && (m = line.match(/^ {2,}- (.*)/))){ last.b += '\n' + m[1]; continue; }
-    if ((m = line.match(/^- \*\*(.+?)\*\* — (.*)/))){ last = { k: 'T', a: m[1], b: m[2], ans: true }; g.items.push(last); continue; }
-    if ((m = line.match(/^- Q: (.+?) — (.*)/))){ last = { k: 'Q', a: m[1], b: m[2], ans: true }; g.items.push(last); continue; }
-    if ((m = line.match(/^- Q: (.+)/))){ last = { k: 'Q', a: m[1], b: '', ans: false }; g.items.push(last); continue; }
-    console.warn('읽지 못한 줄:', line);
-  }
-  out.forEach(g => g.items.forEach(it => {
-    if (it.k !== 'N' && !it.ans) console.warn('답이 없는 문제:', it.a);
-    if (it.b) it.b = it.b.replace(/^\n+/, '');
-  }));
-  return out;
-}
-const getText = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); });
 async function loadDecks(){
   INFO = JSON.parse(await getText(BASE + 'deck.json'));
   KEY = INFO.storageKey || DECK;
@@ -96,7 +55,7 @@ async function loadDecks(){
   $('#deckNotes').innerHTML = (INFO.notes || []).map(n => '<br>' + esc(n)).join('');
   const texts = await Promise.all(INFO.files.map(f => getText(BASE + f)));
   texts.forEach((md, i) => {
-    parseDeck(md).forEach(g => { g.ch = (i + 1) + '. ' + g.ch; DATA.push(g); });
+    parseDeck(md).forEach(g => { g.ch = (i + 1) + '. ' + g.ch; g.items.forEach(it => it.file = INFO.files[i]); DATA.push(g); });
   });
 }
 const $ = s => document.querySelector(s);
@@ -110,13 +69,8 @@ let flags = new Set();
 const revealed = new Set();
 let total = 0;
 
-const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-// ```lang ... ``` 블록은 <pre>, 나머지는 인라인 서식
-const fmt = s => s.split(/(```\w*\n[\s\S]*?\n```)/).map(part => {
-  const m = part.match(/^```(\w*)\n([\s\S]*?)\n```$/);
-  return m ? `<pre class="code"><code>${esc(m[2])}</code></pre>` : inline(part.replace(/^\n|\n$/g, ''));
-}).join('');
+const practiceUrl = it => `../practice/?deck=${encodeURIComponent(DECK)}&file=${encodeURIComponent(it.file)}&n=${it.n}`;
+const runLink = (it, cls) => canPractice(it, INFO) ? `<a class="${cls}" href="${practiceUrl(it)}" target="_blank" rel="noopener">실습하기 ↗</a>` : '';
 const flagSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 
 function build(){
@@ -148,7 +102,8 @@ function build(){
         c.innerHTML =
           `<div class="term"><span class="part" data-p="a"></span></div>` +
           `<div class="desc"><span class="part" data-p="b"></span></div>` +
-          `<button class="flagbtn" aria-label="다시 볼 것 표시" title="다시 볼 것">${flagSvg}</button>`;
+          `<button class="flagbtn" aria-label="다시 볼 것 표시" title="다시 볼 것">${flagSvg}</button>` +
+          runLink(it, 'runbtn');
         c._it = it;
         if (flags.has(id)) c.classList.add('flag');
         g.appendChild(c);
@@ -220,6 +175,7 @@ function closeToc(){ $('#toc').classList.remove('open'); $('#scrim').classList.r
 
 
 $('#main').addEventListener('click', e => {
+  if (e.target.closest('.runbtn')) return;   // 실습 링크는 카드를 뒤집지 않고 새 탭으로
   const fb = e.target.closest('.flagbtn');
   if (fb){
     const c = fb.closest('.card'); c.classList.toggle('flag');
@@ -284,7 +240,7 @@ function qzRender(){
   const label = c.dataset.k === 'Q' ? '정답 보기' : (hp === 'a' ? '용어는?' : '설명은?');
   const part = key => key === hp && !qz.shown ? `<span class="qz-hole">${label}</span>` : `<span class="${key === hp ? 'qz-ans' : ''}">${fmt(it[key])}</span>`;
   box.className = 'qz-card' + (c.dataset.k === 'Q' ? ' q' : '') + (qz.shown ? ' shown' : '');
-  box.innerHTML = `<div class="qz-where">${esc(where)}</div><div class="qz-a">${part('a')}</div><div class="qz-b">${part('b')}</div>`;
+  box.innerHTML = `<div class="qz-where">${esc(where)}</div><div class="qz-a">${part('a')}</div><div class="qz-b">${part('b')}</div>` + runLink(it, 'qz-run');
   $('#qzCnt').textContent = `${qz.base + qz.pos + 1}번째 · ${qz.pool.length}장 중에서`;
   $('#qzPrev').disabled = qz.pos <= 0;
   $('#qzHint').textContent = qz.shown ? '한 번 더 누르면 다음 문제' : '누르면 정답';
@@ -311,6 +267,7 @@ const selectingIn = el => { const s = window.getSelection(); return s && !s.isCo
 let qzTimer = null;
 $('#qzCard').addEventListener('click', e => {
   const card = e.currentTarget;
+  if (e.target.closest('.qz-run')) return;
   if (e.detail > 1){ clearTimeout(qzTimer); qzTimer = null; return; }
   if (selectingIn(card)) return;
   if (!qz.shown){ qzStep(); return; }
