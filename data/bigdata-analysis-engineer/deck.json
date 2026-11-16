@@ -7,6 +7,7 @@
     "코드 결과는 pandas 2.3 · scikit-learn 1.7 · scipy 1.16 · statsmodels 0.14에서 실행해 확인했습니다. 시험 환경의 버전에 따라 일부 출력이 다를 수 있습니다."
   ],
   "files": [
+    "00-exam-env.md",
     "01-type1-basics.md",
     "02-type1-transform.md",
     "03-type2-modeling.md",

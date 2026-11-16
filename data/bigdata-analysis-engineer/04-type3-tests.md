@@ -184,6 +184,59 @@
   - 답: ① `p_lev > 0.05`
   - 등분산 H0를 기각하지 못하면 `True`(합동분산), 기각하면 `False`(Welch).
 
+- Q: 두 집단 분산비 F검정에서 「분자의 자유도가 분모의 자유도보다 크도록」 하라는 지시의 뜻 — 표본 수가 더 많은 집단의 표본분산을 분자에 둔다
+  - 그래서 F값이 1보다 작게 나올 수도 있다. 큰 분산을 분자에 두라는 뜻이 아니다
+- Q: 출력 결과는?
+  ```text
+  import numpy as np
+  a = [4.1, 3.8, 4.5, 4.9, 3.6, 4.2, 4.7, 3.9]
+  b = [5.0, 4.4, 5.8, 3.9, 5.5]
+  F = np.var(a, ddof=1) / np.var(b, ddof=1)
+  print(round(F, 3))
+  ```
+  - 답: `0.341`
+  - a가 8개(자유도 7), b가 5개(자유도 4)라 a가 분자다. 표본분산이라 `ddof=1`
+- Q: 출력 결과는?
+  ```text
+  import numpy as np
+  from scipy import stats
+  a = [4.1, 3.8, 4.5, 4.9, 3.6, 4.2, 4.7, 3.9]
+  b = [5.0, 4.4, 5.8, 3.9, 5.5]
+  F = np.var(a, ddof=1) / np.var(b, ddof=1)
+  d1, d2 = len(a) - 1, len(b) - 1
+  p = 2 * min(stats.f.cdf(F, d1, d2), stats.f.sf(F, d1, d2))
+  print(round(p, 3))
+  ```
+  - 답: `0.204`
+  - scipy에는 두 집단 분산비 F검정 함수가 따로 없어 F분포로 직접 구한다. 양측이면 작은 쪽 꼬리 확률의 두 배
+- Q: 두 집단의 합동 분산 추정량(pooled variance) 식 — ((n1 − 1)s1² + (n2 − 1)s2²) / (n1 + n2 − 2)
+  - 각 집단의 표본분산을 자유도로 가중평균한 값이다
+- Q: 출력 결과는?
+  ```text
+  import numpy as np
+  a = [4.1, 3.8, 4.5, 4.9, 3.6, 4.2, 4.7, 3.9]
+  b = [5.0, 4.4, 5.8, 3.9, 5.5]
+  n1, n2 = len(a), len(b)
+  sp2 = ((n1 - 1) * np.var(a, ddof=1) + (n2 - 1) * np.var(b, ddof=1)) / (n1 + n2 - 2)
+  print(round(sp2, 3))
+  ```
+  - 답: `0.352`
+- Q: 출력 결과는?
+  ```text
+  import numpy as np
+  from scipy import stats
+  a = [4.1, 3.8, 4.5, 4.9, 3.6, 4.2, 4.7, 3.9]
+  b = [5.0, 4.4, 5.8, 3.9, 5.5]
+  n1, n2 = len(a), len(b)
+  sp2 = ((n1 - 1) * np.var(a, ddof=1) + (n2 - 1) * np.var(b, ddof=1)) / (n1 + n2 - 2)
+  t = (np.mean(a) - np.mean(b)) / np.sqrt(sp2 * (1 / n1 + 1 / n2))
+  p = 2 * stats.t.sf(abs(t), n1 + n2 - 2)
+  r = stats.ttest_ind(a, b)
+  print(round(p, 3), round(r.pvalue, 3))
+  ```
+  - 답: `0.061 0.061`
+  - 합동 분산으로 직접 구한 t검정과 `ttest_ind`(기본 `equal_var=True`)는 같은 값을 낸다
+
 ## 분산분석
 
 - **일원 분산분석 (One-way ANOVA)** — 범주형 요인 하나의 수준(집단)별로 연속형 반응의 평균이 모두 같은지 F통계량으로 검정하는 방법
