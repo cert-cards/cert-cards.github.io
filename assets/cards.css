@@ -142,8 +142,9 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding-block:24px 40
   .row.ctl>*{flex:none}
   .row.ctl .search{min-width:170px;flex:1 0 170px}
 }
-/* 코드 문제의 실습 링크 (실습 페이지를 새 탭으로) */
-.runbtn,.qz-run{display:inline-block;margin-top:10px;padding:3px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
-  color:var(--accent);font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
-.runbtn:hover,.qz-run:hover{border-color:var(--accent)}
-.qz-run{margin-top:14px}
+[hidden]{display:none !important}
+/* 구역 탭 (필기 · 카드 | 퀴즈 / 실기 · 카드 | 실습) */
+.tabs{gap:14px}
+.tabgrp{display:inline-flex;align-items:center;gap:6px}
+.tablbl{font-size:13px;font-weight:700;color:var(--ink-2)}
+.tabs .seg button[aria-pressed="true"]{color:var(--accent)}

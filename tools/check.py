@@ -129,6 +129,44 @@ def parse(path):
 
 
 # ── 2. 덱 일치 ─────────────────────────────────────────────────────────
+def check_practice(folder, rel, dj):
+    """실습 문제 목록(JSON): 필수 칸, 파일이 실제로 있는지, 답 형식."""
+    if not rel:
+        fail("practice 보기가 있는데 `practice` 경로가 없다", dj)
+        return
+    path = folder / rel
+    try:
+        bank = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        fail(f"실습 문제 목록을 읽지 못했다: {e}", path)
+        return
+    base = path.parent
+    sets = {x.get("id") for x in bank.get("sets", [])}
+    ids = set()
+    for p in bank.get("problems", []):
+        pid = p.get("id", "?")
+        if pid in ids:
+            fail(f"문제 id `{pid}`가 두 번 있다", path)
+        ids.add(pid)
+        for key in ("set", "type", "no", "title", "statement"):
+            if key not in p:
+                fail(f"`{pid}`: `{key}`가 없다", path)
+        if p.get("set") not in sets:
+            fail(f"`{pid}`: sets에 없는 set `{p.get('set')}`", path)
+        for f in p.get("files", []) + ([p["truth"]] if p.get("truth") else []):
+            if not (base / f).exists():
+                fail(f"`{pid}`: 파일 `{f}`이 없다", path)
+        if p.get("type") in (1, 3):
+            if not p.get("answers") or any(str(a.get("value", "")).strip() == "" for a in p["answers"]):
+                fail(f"`{pid}`: answers가 비었다", path)
+        elif p.get("type") == 2:
+            for key in ("submit", "metric", "truth"):
+                if not p.get(key):
+                    fail(f"`{pid}`: `{key}`가 없다", path)
+        else:
+            fail(f"`{pid}`: type은 1·2·3 중 하나", path)
+
+
 def check_decks():
     decks = []
     try:
@@ -149,18 +187,33 @@ def check_decks():
         except Exception as e:  # noqa: BLE001
             fail(f"JSON 형식 오류: {e}", dj)
             continue
-        for key in ("title", "files"):
-            if not info.get(key):
-                fail(f"`{key}`가 없다", dj)
-        files = info.get("files", [])
+        if not info.get("title"):
+            fail("`title`이 없다", dj)
+        sections = info.get("sections")
+        if sections is None:
+            if not info.get("files"):
+                fail("`files`가 없다", dj)
+            files = info.get("files", [])
+        else:
+            files = []
+            for sec in sections:
+                for key in ("id", "label", "views"):
+                    if not sec.get(key):
+                        fail(f"sections의 `{key}`가 없다", dj)
+                bad = set(sec.get("views", [])) - {"cards", "quiz", "practice"}
+                if bad:
+                    fail(f"모르는 views {sorted(bad)}", dj)
+                files += sec.get("files", [])
+                if "practice" in sec.get("views", []):
+                    check_practice(folder, sec.get("practice"), dj)
         if len(files) != len(set(files)):
             fail("files에 같은 파일이 두 번 있다", dj)
         for f in files:
             if not (folder / f).exists():
                 fail(f"files에 있는 `{f}`가 폴더에 없다", dj)
-        for md in sorted(folder.glob("*.md")):
-            if md.name not in files:
-                fail(f"`{md.name}`이 deck.json files에 없다 — 사이트에 안 보인다", dj)
+        for md in sorted(folder.rglob("*.md")):
+            if str(md.relative_to(folder)) not in files:
+                fail(f"`{md.relative_to(folder)}`이 deck.json files에 없다 — 사이트에 안 보인다", dj)
         if not page.exists():
             fail(f"`{did}/index.html` 페이지가 없다", DATA / "decks.json")
         elif not re.search(r"deck:\s*['\"]" + re.escape(did) + r"['\"]", page.read_text(encoding="utf-8")):

@@ -5,9 +5,24 @@ const get = (url, as) => fetch(url).then(r => { if (!r.ok) throw new Error(url +
 
 async function deckCard(id){
   const info = await get(`data/${id}/deck.json`, 'json');
-  const texts = await Promise.all(info.files.map(f => get(`data/${id}/${f}`)));
-  const cards = texts.reduce((n, md) => n + md.split('\n').filter(l => l.startsWith('- ')).length, 0);
-  const meta = [`${info.files.length}${info.unitLabel || '과목'}`, `${cards}장`, info.summary].filter(Boolean).join(' · ');
+  const count = async files => (await Promise.all(files.map(f => get(`data/${id}/${f}`))))
+    .reduce((n, md) => n + md.split('\n').filter(l => l.startsWith('- ')).length, 0);
+  let parts;
+  if (info.sections){
+    // 구역이 있는 덱: 「필기 120장 · 실기 350장 · 실습 30문제」처럼
+    parts = [];
+    for (const s of info.sections){
+      const n = await count(s.files || []);
+      if (n) parts.push(`${s.label} ${n}장`);
+      if (s.practice){
+        const bank = await get(`data/${id}/${s.practice}`, 'json').catch(() => null);
+        if (bank && bank.problems.length) parts.push(`${s.label} 실습 ${bank.problems.length}문제`);
+      }
+    }
+  } else {
+    parts = [`${info.files.length}${info.unitLabel || '과목'}`, `${await count(info.files)}장`];
+  }
+  const meta = [...parts, info.summary].filter(Boolean).join(' · ');
   return `<a class="deck" href="${esc(id)}/">
       <div>
         <div class="name">${esc(info.title)}</div>

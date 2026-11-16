@@ -1,19 +1,42 @@
 {
   "title": "빅데이터분석기사",
-  "summary": "실기 작업형 1·2·3, 파이썬 코드 문제 포함",
-  "unitLabel": "단원",
+  "summary": "",
   "notes": [
-    "빅데이터분석기사 실기(파이썬) 작업형 1·2·3 유형을 정리한 비공식 학습 자료입니다.",
-    "코드 결과는 pandas 2.3 · scikit-learn 1.7 · scipy 1.16 · statsmodels 0.14에서 실행해 확인했습니다. 시험 환경의 버전에 따라 일부 출력이 다를 수 있습니다."
+    "빅데이터분석기사 비공식 학습 자료입니다. 실기 카드는 라이브러리·함수별로, 실습은 기출 유형을 따라 새로 만든 문제입니다.",
+    "실기 코드 답은 시험 체험환경(제12회) 버전인 pandas 2.2.2 · numpy 1.26.4 · scipy 1.14.1 · scikit-learn 1.5.2 · statsmodels 0.14.1에서 실행해 확인했습니다."
   ],
-  "files": [
-    "00-exam-env.md",
-    "01-type1-basics.md",
-    "02-type1-transform.md",
-    "03-type2-modeling.md",
-    "04-type3-tests.md",
-    "05-type3-regression.md",
-    "06-probability.md"
-  ],
-  "practice": true
+  "sections": [
+    {
+      "id": "written",
+      "label": "필기",
+      "unitLabel": "과목",
+      "views": [
+        "cards",
+        "quiz"
+      ],
+      "files": []
+    },
+    {
+      "id": "practical",
+      "label": "실기",
+      "unitLabel": "단원",
+      "views": [
+        "cards",
+        "practice"
+      ],
+      "files": [
+        "practical/01-pandas-select.md",
+        "practical/02-pandas-aggregate.md",
+        "practical/03-pandas-clean.md",
+        "practical/04-pandas-datetime-string.md",
+        "practical/05-numpy-scipy-basics.md",
+        "practical/06-scipy-tests.md",
+        "practical/07-statsmodels.md",
+        "practical/08-sklearn-preprocess.md",
+        "practical/09-sklearn-models.md",
+        "practical/10-sklearn-metrics.md"
+      ],
+      "practice": "practice/problems.json"
+    }
+  ]
 }

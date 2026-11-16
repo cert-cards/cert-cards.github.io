@@ -18,7 +18,8 @@
 - **퀴즈**: 지금 화면에 보이는 카드에서 무작위로 한 장씩 끝없이 냅니다. 한 번 누르면 정답, 한 번 더 누르면 다음 문제입니다. **← 이전**으로 앞서 푼 문제로 돌아갈 수 있습니다(최근 300문제까지). 키보드는 스페이스·엔터·→(다음), ←(이전), Esc(닫기). 글자를 드래그하거나 더블클릭해 고르면 넘어가지 않으니 복사해서 질문할 수 있습니다.
 - **다시 볼 것 · 검색**으로 범위를 좁힌 뒤 퀴즈를 켜면 그 카드만 나옵니다.
 - 책갈피(다시 볼 것) 표시는 이 브라우저에만 저장됩니다.
-- **실습하기**: 파이썬 코드 문제 아래의 링크를 누르면 실습 페이지가 새 탭으로 열립니다. 코드를 고쳐 브라우저 안에서 바로 실행하고, 출력이 정답과 같은지 확인할 수 있습니다. 브라우저용 파이썬(Pyodide 0.26.4)은 실습 페이지를 열었을 때만 받습니다. 처음 한 번은 수십 MB라 느리고, 그다음부터는 브라우저에 저장된 것을 씁니다. CSV를 올려 `data/` 폴더에서 읽을 수도 있고, 한 번 실행은 시험처럼 60초가 넘으면 멈춥니다.
+- **필기 · 실기 탭**: 구역이 나뉜 자격증(빅데이터분석기사)은 위쪽 탭으로 「필기 › 카드 · 퀴즈」, 「실기 › 카드 · 실습」을 오갑니다.
+- **실습**: 기출 유형을 따라 새로 만든 문제를 데이터와 함께 풉니다. 코드는 브라우저 안 파이썬(Pyodide 0.26.4)에서 돌고, 작업형 1·3은 답 칸에 넣은 값을, 작업형 2는 내 코드가 만든 `result.csv`를 숨겨 둔 정답으로 채점합니다. 파이썬은 실습 탭을 처음 열 때만 받고(수십 MB), 한 번 실행은 시험처럼 60초까지입니다.
 
 ## 카드 데이터
 
@@ -55,8 +56,9 @@
 index.html                  첫 화면 (자격증 목록은 data/decks.json에서 자동으로)
 <자격증>/index.html          자격증 페이지 (제목과 deck 이름만 있음)
 assets/                     공용 화면 코드 (deck.js · app.js · cards.css · home.js · home.css)
-                            실습 페이지용 (practice.js · practice.css · py-worker.js)
-practice/index.html         코드 실습 페이지 (?deck=<자격증>&file=<md 파일>&n=<몇 번째 코드 문제>)
+                            실습 탭용 (practice.js · practice.css · py-worker.js)
+data/<자격증>/<구역>/NN-*.md  구역이 있는 덱의 카드 (deck.json sections[].files)
+data/<자격증>/practice/      실습 문제 목록(problems.json)과 데이터 CSV
 data/decks.json             첫 화면에 보일 자격증 순서
 data/<자격증>/deck.json      제목 · 안내 문구 · 파일 목록
 data/<자격증>/NN-*.md        카드 데이터 (파일 하나 = 과목 하나, 이름 순서가 과목 순서)
@@ -94,7 +96,7 @@ python3 tools/check.py --no-code  # 코드 실행 빼고 빠르게
    }
    ```
 
-   `files` 순서가 과목 순서다. 언어가 `text`인 코드 문제도 파이썬이라 실습 페이지에서 돌릴 수 있으면 `"practice": true`를 넣는다(`python` 블록은 넣지 않아도 실습 링크가 붙는다). `summary`는 첫 화면에 짧게 붙는 설명(비워도 된다). `unitLabel`은 과목 머리의 이름(기본 「과목」, 투자자산운용사는 「단원」).
+   `files` 순서가 과목 순서다. 필기·실기처럼 나누려면 `files` 대신 `sections`를 쓴다: `[{"id": "written", "label": "필기", "views": ["cards", "quiz"], "files": [...]}, {"id": "practical", "label": "실기", "views": ["cards", "practice"], "files": [...], "practice": "practice/problems.json"}]`. 실습 문제 목록의 형식은 `assets/practice.js` 머리 주석에 있다. `summary`는 첫 화면에 짧게 붙는 설명(비워도 된다). `unitLabel`은 과목 머리의 이름(기본 「과목」, 투자자산운용사는 「단원」).
 
 2. **페이지 만들기** — `info-processing/index.html`을 `security-engineer/index.html`로 복사하고 두 군데만 바꾼다.
 
