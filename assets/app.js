@@ -224,10 +224,12 @@ async function route(){
   SEC = sec; VIEW = view;
   if (INFO.sections) store.set('tab', [SEC.id, VIEW]);
   drawTabs();
-  const practice = VIEW === 'practice';
-  $('#cardsView').hidden = practice; $('#practiceView').hidden = !practice;
-  $('#ctl').hidden = practice; $('#pbar').hidden = practice;
-  $('#tocBtn').style.visibility = practice ? 'hidden' : '';
+  const practice = VIEW === 'practice', quiz = VIEW === 'quiz' && !!INFO.sections;
+  // 머리 막대(제목·진행·탭)는 어느 보기에서나 그대로 둔다. 카드용 도구 줄만 카드 보기에서 보인다
+  $('#cardsView').hidden = practice || quiz; $('#practiceView').hidden = !practice;
+  $('#ctl').hidden = practice || quiz; $('#pbar').hidden = practice;
+  $('#tocBtn').hidden = practice || quiz;
+  document.body.classList.toggle('wide', !!INFO.sections);   // 구역 탭이 있는 덱은 모든 보기를 같은 폭(1440px)으로
   $('#quizBtn').hidden = !!INFO.sections;          // 구역이 있는 덱은 퀴즈가 탭이다
   if (secChanged){
     await loadSection(SEC);
@@ -253,7 +255,7 @@ function openPractice(){
   if (!practiceLoaded){
     practiceLoaded = new Promise((ok, no) => {
       const s = document.createElement('script');
-      s.src = '../assets/practice.js?v=6'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
+      s.src = '../assets/practice.js?v=7'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
       document.head.appendChild(s);
     }).then(() => window.Practice.mount($('#practiceView'), { base: BASE, deck: DECK, info: INFO, section: SEC }));
   }
@@ -341,7 +343,11 @@ function qzOpen(){
     return;
   }
   qz.deck = []; qz.last = null; qz.hist = []; qz.pos = -1; qz.base = 0;
-  $('#qz').hidden = false; document.body.style.overflow = 'hidden';
+  // 구역 탭이 있는 덱은 퀴즈를 머리 막대 아래 페이지 안 화면으로, 아니면 화면 전체를 덮는 창으로
+  const inline = !!INFO.sections;
+  $('#qz').classList.toggle('inline', inline);
+  $('#qz').hidden = false; if (!inline) document.body.style.overflow = 'hidden';
+  $('#qzClose').textContent = inline ? '카드로' : '닫기';
   qzNext(); $('#qzCard').focus();
 }
 // 퀴즈 탭에서 닫으면 그 구역의 카드 탭으로 돌아간다

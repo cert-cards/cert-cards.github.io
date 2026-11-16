@@ -148,3 +148,8 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding-block:24px 40
 .tabgrp{display:inline-flex;align-items:center;gap:6px}
 .tablbl{font-size:13px;font-weight:700;color:var(--ink-2)}
 .tabs .seg button[aria-pressed="true"]{color:var(--accent)}
+/* 구역 탭이 있는 덱: 퀴즈를 머리 막대 아래에 페이지 안 화면으로 */
+.qz.inline{position:static;inset:auto;z-index:auto;min-height:calc(100vh - 130px);padding-top:16px}
+.qz.inline .qz-stage{align-items:flex-start;padding-top:28px}
+/* 구역 탭이 있는 덱: 머리 막대와 카드 화면을 실습 화면과 같은 폭으로 — 탭을 옮겨도 머리가 흔들리지 않는다 */
+body.wide .bar-in,body.wide .wrap{max-width:1440px}

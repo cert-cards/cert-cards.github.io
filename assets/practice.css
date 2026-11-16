@@ -1,8 +1,4 @@
 /* 실습 탭 — 색과 버튼은 cards.css의 것을 그대로 쓴다 */
-.pr{max-width:1180px;margin:0 auto;padding-block:16px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px;align-items:start}
-.pr-side{position:sticky;top:120px;max-height:calc(100vh - 140px);overflow:auto;display:flex;flex-direction:column;gap:10px}
-.pr-mode{align-self:flex-start}
 .pr-grp{margin-bottom:10px}
 .pr-gt{font-size:12.5px;font-weight:700;color:var(--ink-2);padding:4px 8px;display:flex;justify-content:space-between}
 .pr-gt span{color:var(--ink-3);font-weight:500;font-variant-numeric:tabular-nums}
@@ -13,9 +9,6 @@
 .pr-dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:5px;border:1.5px solid var(--ink-3)}
 .pr-dot.try{border-color:var(--flag);background:transparent}
 .pr-dot.ok{border-color:var(--accent);background:var(--accent)}
-.pr-main{display:flex;flex-direction:column;gap:12px;min-width:0}
-.pr-where{font-size:12.5px;color:var(--ink-3)}
-.pr-head h2{margin:2px 0 0;font-size:19px;letter-spacing:-.01em}
 .pr-stmt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14.5px;line-height:1.65}
 .pr-stmt p{margin:0 0 8px}.pr-stmt p:last-child{margin-bottom:0}
 .pr-stmt ul{margin:4px 0 8px;padding-left:20px}
@@ -34,7 +27,6 @@
 .pr-al{min-width:28px;font-weight:700}
 .pr-ans input{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;width:200px;font:500 14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .pr-ans input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
-.pr-fmt{font-size:12px;color:var(--ink-3);margin:-4px 0 2px 38px}
 .pr-mark{font-size:12.5px;font-weight:700;border-radius:7px;padding:2px 8px}
 .pr-mark.ok{background:var(--accent-soft);color:var(--accent)}
 .pr-mark.bad{background:var(--flag-soft);color:var(--flag)}
@@ -46,8 +38,6 @@
 .pr-nav .btn:disabled{opacity:.4;cursor:default}
 .pr-foot{font-size:12px;color:var(--ink-3);margin:6px 0 0}
 @media (max-width:860px){
-  .pr{grid-template-columns:minmax(0,1fr)}
-  .pr-side{position:static;max-height:280px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
   .pr-hint{display:none}
   .pr-editor{min-height:240px;font-size:13px}
   .pr-gutter{font-size:13px}
@@ -95,3 +85,42 @@
 .pr-ans-head{font-size:14px;font-weight:700;color:var(--accent);display:flex;gap:10px;align-items:baseline}
 .pr-ans-head span{font-size:12px;font-weight:500;color:var(--ink-3)}
 .pr-ans input{background:var(--surface);width:280px}
+
+/* 배치: 위쪽 막대 · 서랍 목록 · 문제 | 코드 */
+.pr{max-width:1440px;margin:0 auto;padding-bottom:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.pr-bar{position:sticky;top:var(--pr-top,0px);z-index:15;display:flex;align-items:center;gap:10px;padding:8px 0;
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.pr-where{flex:1;min-width:0;font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-step{display:inline-flex;gap:6px}
+.pr-step .btn:disabled{opacity:.4;cursor:default}
+.pr-exam{display:inline-flex;align-items:center;gap:8px}
+.pr-clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--accent)}
+.pr-clock.low{color:var(--flag)}
+.pr-scrim{position:fixed;inset:0;z-index:44;background:rgba(0,0,0,.35)}
+.pr-drawer{position:fixed;top:0;left:0;bottom:0;z-index:45;width:min(88vw,380px);overflow:auto;background:var(--surface);
+  padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));box-shadow:4px 0 24px rgba(0,0,0,.2)}
+.pr-drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.pr-mode button:disabled{opacity:.5;cursor:default}
+.pr-gx{display:flex;align-items:center;gap:8px;padding:0 8px 6px}
+.pr-start{font-size:12px;padding:3px 9px}
+.pr-last{font-size:12px;color:var(--ink-3)}
+.pr-split{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;padding-top:14px;align-items:start}
+.pr-left,.pr-right{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pr-title{margin:0;font-size:19px;letter-spacing:-.01em}
+@media (min-width:1100px){
+  .pr-split{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:24px}
+  .pr-left{position:sticky;top:var(--pr-top2,120px);max-height:calc(100vh - var(--pr-top2,120px) - 12px);overflow:auto;padding-right:6px}
+}
+/* 데이터 미리보기: 칼럼 타입과 결측 */
+.pr-colinfo th{background:var(--surface);color:var(--ink-3);font-weight:500;font-size:11.5px}
+.pr-colinfo b{color:var(--flag);font-weight:600}
+/* 시험 결과 */
+.pr-report{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.pr-rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pr-rep-t{font-size:14px;font-weight:700;color:var(--ink-2)}
+.pr-rep-score{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.pr-rep-score span{font-size:13px;font-weight:500;color:var(--ink-3);margin-left:6px}
+.pr-rep-score.ok{color:var(--accent)}
+.pr-rep-score.bad{color:var(--flag)}
+.pr-replink{border:0;background:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-align:left}
+.pr-saved{font-size:12px;color:var(--ink-3)}
