@@ -96,9 +96,10 @@
 .pr-exam{display:inline-flex;align-items:center;gap:8px}
 .pr-clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--accent)}
 .pr-clock.low{color:var(--flag)}
-.pr-scrim{position:fixed;inset:0;z-index:44;background:rgba(0,0,0,.35)}
-.pr-drawer{position:fixed;top:0;left:0;bottom:0;z-index:45;width:min(88vw,380px);overflow:auto;background:var(--surface);
-  padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));box-shadow:4px 0 24px rgba(0,0,0,.2)}
+.pr-scrim{position:fixed;inset:0;z-index:44;background:rgba(0,0,0,.18)}
+/* 문제 목록: 버튼 바로 아래에 붙는 판. 상단 막대가 sticky라 스크롤해도 같이 따라온다 */
+.pr-drawer{position:absolute;top:calc(100% + 6px);left:0;z-index:45;width:min(420px,calc(100vw - 32px));max-height:min(72vh,680px);overflow:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
 .pr-drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .pr-mode button:disabled{opacity:.5;cursor:default}
 .pr-gx{display:flex;align-items:center;gap:8px;padding:0 8px 6px}

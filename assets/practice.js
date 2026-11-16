@@ -5,7 +5,7 @@
 //                starter, answers: [{ label, format, value }],          ← 작업형 1·3: 답 칸
 //                submit: { file, column, rows }, metric, truth, reference: { baseline, solution }, ← 작업형 2: CSV 채점
 //                solution, explain }]
-// 화면: 넓으면 문제(왼쪽) | 코드·결과·답안(오른쪽), 좁으면 위아래. 문제 목록은 왼쪽에서 여는 서랍.
+// 화면: 넓으면 문제(왼쪽) | 코드·결과·답안(오른쪽), 좁으면 위아래. 문제 목록은 「문제 목록」 버튼 바로 아래에 펼치는 판.
 // 시험 모드: 한 세트를 180분 안에 풀고 끝낼 때 한꺼번에 채점한다(그전에는 정답·풀이를 가린다).
 // 내 코드·답·채점 결과·시험 기록은 이 브라우저(localStorage)에만 남는다.
 window.Practice = (() => {
@@ -58,15 +58,15 @@ window.Practice = (() => {
     <span class="pr-where" id="prWhere"></span>
     <span class="pr-exam" id="prExam" hidden><span class="pr-clock" id="prClock"></span><button class="btn" id="prExamEnd">시험 끝내기</button></span>
     <span class="pr-step"><button class="btn" id="prPrev" aria-label="이전 문제">←</button><button class="btn" id="prNext" aria-label="다음 문제">→</button></span>
+    <div class="pr-scrim" id="prScrim" hidden></div>
+    <aside class="pr-drawer" id="prDrawer" hidden aria-label="문제 목록">
+      <div class="pr-drawer-head">
+        <div class="seg pr-mode" role="group" aria-label="목록 묶음"><button data-mode="set">모의고사</button><button data-mode="type">유형별</button></div>
+        <button class="icon-btn" id="prDrawerClose" aria-label="목록 닫기">✕</button>
+      </div>
+      <nav class="pr-list" id="prList"></nav>
+    </aside>
   </div>
-  <div class="pr-scrim" id="prScrim" hidden></div>
-  <aside class="pr-drawer" id="prDrawer" hidden aria-label="문제 목록">
-    <div class="pr-drawer-head">
-      <div class="seg pr-mode" role="group" aria-label="목록 묶음"><button data-mode="set">모의고사</button><button data-mode="type">유형별</button></div>
-      <button class="icon-btn" id="prDrawerClose" aria-label="목록 닫기">✕</button>
-    </div>
-    <nav class="pr-list" id="prList"></nav>
-  </aside>
   <div class="pr-report" id="prReport" hidden></div>
   <div class="pr-split">
     <section class="pr-left">
@@ -436,7 +436,7 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
   async function mount(el, c){
     root = el; ctx = c;
     if (!document.querySelector('link[data-practice-css]')){
-      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=7'; l.dataset.practiceCss = '';
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=8'; l.dataset.practiceCss = '';
       document.head.appendChild(l);
     }
     mode = st.get('mode', 'set');
