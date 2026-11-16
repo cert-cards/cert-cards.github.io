@@ -30,18 +30,6 @@
 .pr-meta{color:var(--ink-3);font-size:12px}
 .pr-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .pr-tools .btn:disabled{opacity:.45;cursor:default}
-.pr-hint{font-size:12px;color:var(--ink-3);margin-left:auto}
-.pr-editor{width:100%;min-height:300px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);
-  padding:12px 14px;font:400 14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:4;white-space:pre;overflow:auto}
-.pr-editor:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
-.pr-status{font-size:13px;color:var(--ink-2)}
-.pr-status.ok{color:var(--accent)}
-.pr-status.bad,.pr-out .error{color:var(--flag)}
-.pr-sub{font-size:13px;font-weight:700;color:var(--ink-2)}
-.pr-out{margin:0;min-height:64px;max-height:380px;overflow:auto;padding:12px 14px;background:var(--surface-2);border-radius:10px;
-  font:400 13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
-.pr-out .warn{color:var(--ink-3)}
-.pr-answer{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .pr-ans{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pr-al{min-width:28px;font-weight:700}
 .pr-ans input{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;width:200px;font:500 14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -62,6 +50,48 @@
   .pr-side{position:static;max-height:280px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
   .pr-hint{display:none}
   .pr-editor{min-height:240px;font-size:13px}
+  .pr-gutter{font-size:13px}
   .pr-ans input{width:100%}
   .pr-fmt{margin-left:0}
 }
+
+/* 코드 작성 칸 — 페이지와 다른 색(시험 화면처럼 어두운 편집기)으로 입력하는 곳임을 드러낸다 */
+.pr{--ed-bg:#1b1d23;--ed-head:#23262e;--ed-ink:#e6e7eb;--ed-dim:#7c8190;--ed-line:#30343d;--ed-out:#14161b}
+:root[data-theme="dark"] .pr{--ed-bg:#0f1115;--ed-head:#171a20;--ed-line:#2a2e37;--ed-out:#0b0c10}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .pr{--ed-bg:#0f1115;--ed-head:#171a20;--ed-line:#2a2e37;--ed-out:#0b0c10} }
+.pr-ide{border:1.5px solid var(--accent);border-radius:12px;overflow:hidden;background:var(--ed-bg);box-shadow:0 0 0 4px var(--accent-soft)}
+.pr-ide:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.pr-ide-head{display:flex;align-items:center;gap:10px;padding:7px 14px;background:var(--ed-head);border-bottom:1px solid var(--ed-line);font-size:12.5px;color:var(--ed-dim)}
+.pr-ide-title{color:var(--ed-ink);font-weight:700}
+.pr-ide-head code{background:rgba(255,255,255,.08);color:var(--ed-ink)}
+.pr-ide-body{display:flex;align-items:stretch}
+.pr-gutter{margin:0;padding:12px 10px 12px 12px;min-width:40px;text-align:right;color:var(--ed-dim);background:var(--ed-bg);border-right:1px solid var(--ed-line);
+  font:400 14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:hidden;user-select:none;white-space:pre}
+.pr-editor{flex:1;min-width:0;min-height:300px;resize:vertical;border:0;outline:0;background:var(--ed-bg);color:var(--ed-ink);caret-color:#9db4ff;
+  padding:12px 14px;font:400 14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:4;white-space:pre;overflow:auto}
+.pr-editor::selection{background:#3a4a7a}
+.pr-ide-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;background:var(--ed-head);border-top:1px solid var(--ed-line)}
+.pr-ide-bar .btn{background:transparent;border-color:var(--ed-line);color:var(--ed-ink)}
+.pr-ide-bar .btn:hover{border-color:var(--ed-dim)}
+.btn.run{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.pr-ide-bar .btn.run{background:#4f7cf0;border-color:#4f7cf0;color:#fff}
+.pr-ide-bar .btn.stop{border-color:#d9604f;color:#ff8b7b}
+.btn.run:disabled{opacity:.45;cursor:default}
+.pr-hint{font-size:12px;color:var(--ed-dim);margin-left:auto}
+/* 실행 결과 — 편집기에 붙은 콘솔 */
+.pr-console{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--ed-out)}
+.pr-console-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 14px;background:var(--ed-head);font-size:12.5px;color:var(--ed-dim)}
+.pr-console-head>span:first-child{color:var(--ed-ink);font-weight:700}
+.pr-status{font-size:12.5px;color:var(--ed-dim)}
+.pr-status.ok{color:#8fb0ff}
+.pr-status.bad{color:#ff8b7b}
+.pr-out{margin:0;min-height:72px;max-height:380px;overflow:auto;padding:12px 14px;color:var(--ed-ink);background:var(--ed-out);
+  font:400 13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre}
+.pr-out:empty::before{content:'실행하면 print 결과가 여기에 나옵니다';color:var(--ed-dim)}
+.pr-out .warn{color:var(--ed-dim)}
+.pr-out .error{color:#ff8b7b}
+/* 답안 — 제출하는 곳은 강조색 바탕 */
+.pr-answer{display:flex;flex-direction:column;gap:8px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:12px;padding:14px 16px}
+.pr-ans-head{font-size:14px;font-weight:700;color:var(--accent);display:flex;gap:10px;align-items:baseline}
+.pr-ans-head span{font-size:12px;font-weight:500;color:var(--ink-3)}
+.pr-ans input{background:var(--surface);width:280px}

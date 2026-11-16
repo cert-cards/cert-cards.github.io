@@ -253,7 +253,7 @@ function openPractice(){
   if (!practiceLoaded){
     practiceLoaded = new Promise((ok, no) => {
       const s = document.createElement('script');
-      s.src = '../assets/practice.js?v=4'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
+      s.src = '../assets/practice.js?v=6'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
       document.head.appendChild(s);
     }).then(() => window.Practice.mount($('#practiceView'), { base: BASE, deck: DECK, info: INFO, section: SEC }));
   }

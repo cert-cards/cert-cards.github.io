@@ -55,16 +55,23 @@ window.Practice = (() => {
     <div class="pr-head"><div class="pr-where" id="prWhere"></div><h2 id="prTitle"></h2></div>
     <div class="pr-stmt" id="prStmt"></div>
     <div class="pr-files" id="prFiles"></div>
-    <div class="pr-tools">
-      <button class="btn quiz" id="prRun" disabled>실행</button>
-      <button class="btn" id="prStop" hidden>정지</button>
-      <button class="btn" id="prReset">처음 코드로</button>
-      <span class="pr-hint">⌘/Ctrl + Enter로 실행</span>
+    <div class="pr-ide">
+      <div class="pr-ide-head"><span class="pr-ide-title">코드 작성</span><span class="pr-ide-meta">Python 3 · 데이터는 <code>data/</code> 폴더</span></div>
+      <div class="pr-ide-body">
+        <pre class="pr-gutter" id="prGutter" aria-hidden="true">1</pre>
+        <textarea id="prEditor" class="pr-editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="코드 편집기"></textarea>
+      </div>
+      <div class="pr-ide-bar">
+        <button class="btn run" id="prRun" disabled>▶ 실행</button>
+        <button class="btn stop" id="prStop" hidden>■ 정지</button>
+        <button class="btn ghost" id="prReset">처음 코드로</button>
+        <span class="pr-hint">⌘/Ctrl + Enter로 실행 · 한 번 실행은 60초까지</span>
+      </div>
     </div>
-    <textarea id="prEditor" class="pr-editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="코드 편집기"></textarea>
-    <div class="pr-status" id="prStatus">파이썬 준비 중 · 처음 한 번은 수십 MB를 받습니다. 그다음부터는 브라우저에 저장된 것을 씁니다.</div>
-    <div class="pr-sub">실행 결과</div>
-    <pre class="pr-out" id="prOut" aria-live="polite"></pre>
+    <div class="pr-console">
+      <div class="pr-console-head"><span>실행 결과</span><span class="pr-status" id="prStatus">파이썬 준비 중 · 처음 한 번은 수십 MB를 받습니다</span></div>
+      <pre class="pr-out" id="prOut" aria-live="polite"></pre>
+    </div>
     <div class="pr-answer" id="prAnswer"></div>
     <div class="pr-sol-row"><button class="btn" id="prSolBtn" aria-expanded="false">풀이 보기</button></div>
     <div class="pr-sol" id="prSol" hidden></div>
@@ -107,6 +114,7 @@ window.Practice = (() => {
     q('#prTitle').textContent = p.title;
     q('#prStmt').innerHTML = md(p.statement);
     q('#prEditor').value = st.get('c:' + p.id, null) ?? (p.starter || '');
+    gutter();
     q('#prOut').textContent = '';
     q('#prSol').hidden = true; q('#prSolBtn').setAttribute('aria-expanded', 'false'); q('#prSolBtn').textContent = '풀이 보기';
     q('#prSol').innerHTML = (p.solution ? fmt('```python\n' + p.solution.replace(/\n$/, '') + '\n```') : '') + md(p.explain);
@@ -142,18 +150,17 @@ window.Practice = (() => {
     if (p.type === 2){
       const [mname, higher] = METRIC[p.metric] || [p.metric, true];
       const r = p.reference || {};
-      box.innerHTML = `<div class="pr-sub">답안 제출</div>
+      box.innerHTML = `<div class="pr-ans-head">답안 제출 <span>작업형 2 · result.csv로 채점</span></div>
 <p class="pr-rule">예측 결과를 <code>${esc(p.submit.file)}</code>로 저장하는 코드를 제출합니다. 칼럼은 <code>${esc(p.submit.column)}</code> 하나, 행은 ${p.submit.rows}개, <code>index=False</code>. 평가지표는 ${esc(mname)}(${higher ? '높을수록' : '낮을수록'} 좋음)입니다.</p>
-<div class="pr-tools"><button class="btn quiz" id="prSubmit">제출하고 채점</button></div>
+<div class="pr-tools"><button class="btn run" id="prSubmit">제출하고 채점</button></div>
 <div class="pr-result" id="prResult">${saved.msg ? saved.msg : ''}</div>
 ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩하고 기본 RandomForest를 쓴 점수 ${fmtScore(r.baseline)} · 풀이 코드 점수 ${fmtScore(r.solution)} (시험 환경 기준. 브라우저에서는 소수 둘째·셋째 자리가 조금 다를 수 있습니다)</p>` : ''}`;
       q('#prSubmit').addEventListener('click', submit2);
       return;
     }
-    box.innerHTML = `<div class="pr-sub">답안 입력</div>` + p.answers.map((a, i) =>
-      `<label class="pr-ans"><span class="pr-al">${esc(a.label || '답')}</span><input data-i="${i}" value="${esc(saved['v' + i] || '')}" autocomplete="off" placeholder="${esc(a.format || '')}"><span class="pr-mark" id="prMark${i}"></span></label>
-       <div class="pr-fmt">${esc(a.format || '')}</div>`).join('') +
-      `<div class="pr-tools"><button class="btn quiz" id="prCheck">채점</button></div>`;
+    box.innerHTML = `<div class="pr-ans-head">답안 입력 <span>값을 넣고 채점</span></div>` + p.answers.map((a, i) =>
+      `<label class="pr-ans"><span class="pr-al">${esc(a.label || '답')}</span><input data-i="${i}" value="${esc(saved['v' + i] || '')}" autocomplete="off" placeholder="${esc(a.format || '')}"><span class="pr-mark" id="prMark${i}"></span></label>`).join('') +
+      `<div class="pr-tools"><button class="btn run" id="prCheck">채점</button></div>`;
     box.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
       const s = st.get('a:' + p.id, {}); s['v' + inp.dataset.i] = inp.value; st.set('a:' + p.id, s);
     }));
@@ -207,11 +214,11 @@ ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩�
   function append(s, cls){ const sp = document.createElement('span'); if (cls) sp.className = cls; sp.textContent = s; q('#prOut').appendChild(sp); }
   function makeWorker(){
     ready = false; filesSent = null; q('#prRun').disabled = true;
-    worker = new Worker('../assets/py-worker.js?v=4');
+    worker = new Worker('../assets/py-worker.js?v=5');
     worker.onmessage = e => {
       const m = e.data;
       if (m.type === 'status') setStatus(m.s + ' …');
-      else if (m.type === 'ready'){ ready = true; q('#prRun').disabled = false; setStatus('준비됨 · ' + m.s, 'ok'); sendFiles(); }
+      else if (m.type === 'ready'){ ready = true; q('#prRun').disabled = false; setStatus('준비됨 · ' + m.s.replace(/ · numpy.*/, ''), 'ok'); sendFiles(); }
       else if (m.type === 'fatal') setStatus('파이썬을 불러오지 못했습니다. 네트워크를 확인하고 새로고침해 주세요. (' + m.s + ')', 'bad');
       else if (m.type === 'out') append(m.s + '\n');
       else if (m.type === 'err') append(m.s + '\n', 'warn');
@@ -240,6 +247,13 @@ ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩�
     makeWorker(); setStatus('파이썬을 다시 불러오는 중 …');
   }
 
+  // 줄 번호: 편집기의 줄 수만큼 숫자를 세우고 스크롤을 같이 움직인다
+  function gutter(){
+    const n = q('#prEditor').value.split('\n').length;
+    const g = q('#prGutter');
+    if (g._n !== n){ g._n = n; g.textContent = Array.from({ length: n }, (_, i) => i + 1).join('\n'); }
+    g.scrollTop = q('#prEditor').scrollTop;
+  }
   function bind(){
     root.querySelectorAll('.pr-mode button').forEach(b => b.addEventListener('click', () => { mode = b.dataset.mode; st.set('mode', mode); drawList(); }));
     q('#prList').addEventListener('click', e => {
@@ -249,7 +263,7 @@ ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩�
     });
     q('#prRun').addEventListener('click', run);
     q('#prStop').addEventListener('click', () => stop());
-    q('#prReset').addEventListener('click', () => { q('#prEditor').value = cur.starter || ''; st.set('c:' + cur.id, undefined); });
+    q('#prReset').addEventListener('click', () => { q('#prEditor').value = cur.starter || ''; st.set('c:' + cur.id, undefined); gutter(); });
     q('#prSolBtn').addEventListener('click', () => {
       const open = q('#prSol').hidden;
       q('#prSol').hidden = !open; q('#prSolBtn').setAttribute('aria-expanded', open); q('#prSolBtn').textContent = open ? '풀이 가리기' : '풀이 보기';
@@ -262,6 +276,9 @@ ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩�
       clearTimeout(saveT);
       saveT = setTimeout(() => { const v = q('#prEditor').value; st.set('c:' + cur.id, v === (cur.starter || '') ? undefined : v); }, 300);
     });
+    const ed = q('#prEditor'), gut = q('#prGutter');
+    ed.addEventListener('scroll', () => { gut.scrollTop = ed.scrollTop; });
+    ed.addEventListener('input', gutter);
     q('#prEditor').addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); run(); return; }
       if (e.key === 'Tab' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey){
@@ -275,7 +292,7 @@ ${r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형만 인코딩�
   async function mount(el, c){
     root = el; ctx = c;
     if (!document.querySelector('link[data-practice-css]')){
-      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=4'; l.dataset.practiceCss = '';
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=6'; l.dataset.practiceCss = '';
       document.head.appendChild(l);
     }
     mode = st.get('mode', 'set');
