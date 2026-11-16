@@ -12,13 +12,13 @@ const TEXTS = {};       // 파일 이름 → Markdown
 // 화면 뼈대 — 모든 자격증이 같다
 document.body.insertAdjacentHTML('afterbegin', `
 <div class="bar"><div class="bar-in">
-  <div class="row">
+  <div class="row top">
     <button class="icon-btn" id="tocBtn" aria-label="목차 열기">☰</button>
     <h1 id="deckTitle"></h1>
+    <nav class="tabs" id="tabs" hidden aria-label="구역"></nav>
     <span class="prog" id="prog">불러오는 중</span>
     <button class="icon-btn" id="themeBtn" aria-label="다크 모드 전환" title="다크 모드 전환">◐</button>
   </div>
-  <nav class="row tabs" id="tabs" hidden aria-label="구역"></nav>
   <div class="row ctl" id="ctl">
     <div class="seg" role="group" aria-label="가릴 쪽">
       <button data-mode="term" aria-pressed="true">용어 가리기</button>

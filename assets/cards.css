@@ -144,8 +144,12 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding-block:24px 40
 }
 [hidden]{display:none !important}
 /* 구역 탭 (필기 · 카드 | 퀴즈 / 실기 · 카드 | 실습) */
-.tabs{gap:14px}
+/* 머리 막대 한 줄: 제목 · 탭 · (오른쪽 끝) 진행 · 테마 */
+.row.top h1{flex:0 1 auto}
+.row.top .prog{margin-left:auto}
+.tabs{display:flex;align-items:center;gap:14px;margin-left:14px}
 .tabgrp{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:720px){ .tabs{order:5;flex-basis:100%;margin-left:0} }
 .tablbl{font-size:13px;font-weight:700;color:var(--ink-2)}
 .tabs .seg button[aria-pressed="true"]{color:var(--accent)}
 /* 구역 탭이 있는 덱: 퀴즈를 머리 막대 아래에 페이지 안 화면으로 */
