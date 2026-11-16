@@ -6,6 +6,7 @@
 
 | 자격증 | 바로가기 | 데이터 |
 |---|---|---|
+| 빅데이터분석기사 | [bigdata-analysis-engineer](https://cert-cards.github.io/bigdata-analysis-engineer/) | [data/bigdata-analysis-engineer](data/bigdata-analysis-engineer) |
 | 투자자산운용사 | [investment-manager](https://cert-cards.github.io/investment-manager/) | [data/investment-manager](data/investment-manager) |
 | 정보처리기사 | [info-processing](https://cert-cards.github.io/info-processing/) | [data/info-processing](data/info-processing) |
 | Azure AI Fundamentals (AI-901) | [azure-ai-fundamentals](https://cert-cards.github.io/azure-ai-fundamentals/) | [data/azure-ai-fundamentals](data/azure-ai-fundamentals) |
