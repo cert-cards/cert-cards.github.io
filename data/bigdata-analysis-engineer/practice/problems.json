@@ -100,7 +100,7 @@
    "no": "2",
    "points": 40,
    "title": "카페 매장 일 매출액 예측 (RMSE)",
-   "statement": "다음은 한 카페 프랜차이즈 매장들의 일 매출 데이터이다. 학습용 데이터(train.csv)를 이용하여 일 매출액(sales)을 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 sales를 예측하여 제출하시오.\n\n- 학습용 데이터: 2,400행, 11개 칼럼 (sales 포함)\n- 평가용 데이터: 800행, 10개 칼럼 (sales 없음)\n\n| 칼럼 | 설명 |\n|---|---|\n| id | 행 식별 번호 |\n| region | 매장 상권 (역세권, 주택가, 오피스, 대학가) |\n| weekday | 요일 (월~일) |\n| month | 월 (1~12) |\n| temp | 일 평균기온(℃) |\n| rain_mm | 일 강수량(mm) |\n| promo | 할인 행사 여부 (1: 행사, 0: 없음) |\n| seats | 매장 좌석 수 |\n| staff | 근무 인원(명) |\n| delivery | 배달 운영 여부 (Y, N) |\n| sales | 일 매출액(만원). POS 집계가 되지 않은 날은 0으로 기록되어 있음 |\n\n【유의 사항】\n\n- 성능 평가 지표는 RMSE(Root Mean Squared Error)이며, 값이 낮을수록 좋다.\n- id는 식별자이므로 모형 학습에 사용하지 않는다.\n\n【제출 형식】\n\n- 파일명: result.csv\n- 칼럼: pred 1개 (index 없이 저장)\n- 행 수: 800행 (test.csv와 같은 행 순서)\n- pred에는 예측한 일 매출액(만원)을 넣는다",
+   "statement": "다음은 한 카페 프랜차이즈 매장들의 일 매출 데이터이다. 학습용 데이터(train.csv)를 이용하여 일 매출액(sales)을 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 sales를 예측하여 제출하시오.\n\n- 학습용 데이터: 2,400행, 11개 칼럼 (sales 포함)\n- 평가용 데이터: 800행, 10개 칼럼 (sales 없음)\n\n| 칼럼 | 설명 |\n|---|---|\n| id | 행 식별 번호 |\n| region | 매장 상권 (역세권, 주택가, 오피스, 대학가) |\n| weekday | 요일 (월~일) |\n| month | 월 (1~12) |\n| temp | 일 평균기온(℃) |\n| rain_mm | 일 강수량(mm) |\n| promo | 할인 행사 여부 (1: 행사, 0: 없음) |\n| seats | 매장 좌석 수 |\n| staff | 근무 인원(명) |\n| delivery | 배달 운영 여부 (Y, N) |\n| sales | 일 매출액(만원). POS 집계가 되지 않은 날은 0으로 기록되어 있음 |\n\n【유의 사항】\n\n- 성능 평가 지표는 RMSE(Root Mean Squared Error)이며, 값이 낮을수록 좋다.\n- 평가용 데이터의 실제 매출(채점 기준값)에는 집계 누락이 없다. 모든 날이 정상 집계된 매출이다.\n- id는 식별자이므로 모형 학습에 사용하지 않는다.\n\n【제출 형식】\n\n- 파일명: result.csv\n- 칼럼: pred 1개 (index 없이 저장)\n- 행 수: 800행 (test.csv와 같은 행 순서)\n- pred에는 예측한 일 매출액(만원)을 넣는다",
    "files": [
     "m1/train.csv",
     "m1/test.csv"
@@ -379,8 +379,8 @@
    "type": 1,
    "no": "1-2",
    "points": 10,
-   "title": "매출 3위 연-월과 그 달의 최소 매출 분류",
-   "statement": "어느 온라인 쇼핑몰의 2024년 7월 ~ 2025년 12월 주문 데이터이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| order_id | 주문 ID |\n| order_date | 주문일 (YYYY-MM-DD) |\n| category | 상품 분류 |\n| amount | 주문 금액(원) |\n\n다음 순서로 수행하시오.\n\n- 1) order_date를 날짜형으로 바꾸고 연-월(예: 2025-03)을 만든다. 연도가 다르면 다른 연-월이다.\n- 2) 연-월별 amount 합계를 구한다.\n\n① 합계가 세 번째로 큰 연-월의 합계 금액을 구하시오.\n\n② ①의 연-월 주문만으로 category별 amount 합계를 구했을 때, 합계가 가장 작은 category를 구하시오.\n\n【제출 형식】 ① 정수 ② 분류 이름 그대로 (예: 패션)",
+   "title": "이용 인원 2위 연-월과 전월 대비 증가 1위 시설",
+   "statement": "어느 구청이 운영하는 공공 체육시설의 2024년 3월 ~ 2025년 10월 예약 기록이다. 한 행이 예약 한 건이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| booking_id | 예약 ID |\n| use_date | 이용일 (YYYY-MM-DD) |\n| facility | 시설 |\n| people | 이용 인원(명) |\n\n다음 순서로 수행하시오.\n\n- 1) use_date를 날짜형으로 바꾸고 연-월(예: 2025-03)을 만든다. 같은 월이라도 연도가 다르면 다른 연-월이다.\n- 2) 연-월별 people 합계를 구한다.\n\n① people 합계가 두 번째로 큰 연-월의 people 합계를 구하시오.\n\n② ①의 연-월과 그 바로 앞 연-월(예: 2025-01의 바로 앞은 2024-12)에 대해 각각 facility별 people 합계를 구한다. 증가량 = (①의 연-월 합계) − (바로 앞 연-월 합계) 가 가장 큰 facility를 구하시오. 증가량은 음수일 수도 있다.\n\n【제출 형식】 ① 정수 ② 시설 이름 그대로 (예: 수영장)",
    "files": [
     "m3/t1_2.csv"
    ],
@@ -389,16 +389,16 @@
     {
      "label": "①",
      "format": "정수",
-     "value": "6523200"
+     "value": "617"
     },
     {
      "label": "②",
-     "format": "분류 이름 그대로",
-     "value": "도서"
+     "format": "시설 이름 그대로",
+     "value": "탁구장"
     }
    ],
-   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\ndf['order_date'] = pd.to_datetime(df['order_date'])\ndf['ym'] = df['order_date'].dt.to_period('M')\ns = df.groupby('ym')['amount'].sum().sort_values(ascending=False)\nym3 = s.index[2]\nprint(s.iloc[2])\nc = df[df['ym'] == ym3].groupby('category')['amount'].sum()\nprint(c.idxmin())\n",
-   "explain": "dt.to_period('M')은 연과 월을 함께 가진 값이라 2024-11과 2025-11이 따로 묶인다. dt.month로 묶으면 7~12월이 두 해치씩 합쳐져 세 번째가 바뀐다. dt.strftime('%Y-%m')으로 문자열을 만들어도 된다.\n\n②는 ①에서 찾은 연-월로 다시 거른 뒤 groupby().sum().idxmin()으로 분류 이름을 얻는다."
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\ndf['use_date'] = pd.to_datetime(df['use_date'])\ndf['ym'] = df['use_date'].dt.to_period('M')\ns = df.groupby('ym')['people'].sum().sort_values(ascending=False)\nym2 = s.index[1]\nprint(s.iloc[1])\ncur = df[df['ym'] == ym2].groupby('facility')['people'].sum()\nbef = df[df['ym'] == ym2 - 1].groupby('facility')['people'].sum()\nprint((cur - bef).idxmax())\n",
+   "explain": "dt.to_period('M')은 연과 월을 함께 가진 값이라 2024-07과 2025-07이 따로 묶인다. dt.month로 묶으면 3~10월이 두 해치씩 합쳐져 2위의 합계가 달라진다.\n\nPeriod에서 1을 빼면 바로 앞 달이 된다(2025-01 − 1 = 2024-12). 문자열 연-월을 쓴다면 앞 달을 직접 만들어야 하니 Period가 편하다. 두 달의 facility별 합계는 인덱스가 시설 이름이라 그대로 빼면 시설끼리 맞춰 계산된다. 그 달 합계가 가장 큰 시설과 증가량이 가장 큰 시설은 다르니 뺄셈을 건너뛰지 않는다."
   },
   {
    "id": "m3-1-3",
@@ -443,11 +443,11 @@
    "metric": "rmsle",
    "truth": "m3/t2_truth.csv",
    "reference": {
-    "baseline": 0.8013,
-    "solution": 0.6718
+    "baseline": 0.8296,
+    "solution": 0.7176
    },
    "solution": "import pandas as pd\nimport numpy as np\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_squared_log_error\n\ntrain = pd.read_csv('data/train.csv')\ntest = pd.read_csv('data/test.csv')\n\n# 1) 타깃 분포 확인 -> 0이 많고 오른쪽으로 길게 치우친 카운트\nprint(train['sessions'].describe())\n\n# 2) 범주형 원-핫 인코딩 (train과 test를 합쳐서)\ny = np.log1p(train['sessions'])          # RMSLE에 맞춰 log(1+y)로 학습\nX_all = pd.concat([train.drop(columns=['id', 'sessions']), test.drop(columns=['id'])])\nX_all = pd.get_dummies(X_all, columns=['station_type', 'area', 'day_type'])\nX = X_all.iloc[:len(train)]\nX_test = X_all.iloc[len(train):]\n\n# 3) 검증 (원래 단위로 되돌려 RMSLE 계산)\nX_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, random_state=0)\nmodel = RandomForestRegressor(n_estimators=200, random_state=0)\nmodel.fit(X_tr, y_tr)\np_val = np.clip(np.expm1(model.predict(X_val)), 0, None)\nprint('검증 RMSLE:', np.sqrt(mean_squared_log_error(np.expm1(y_val), p_val)))\n\n# 4) 전체 train으로 다시 학습해 예측, 음수는 0으로\nmodel.fit(X, y)\npred = np.clip(np.expm1(model.predict(X_test)), 0, None)\npd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)\nprint(pd.read_csv('result.csv').shape)\n",
-   "explain": "sessions는 0 이상의 카운트이고 오른쪽으로 길게 치우쳐 있다(중앙값 2, 최댓값 100 이상). RMSLE는 log(1+y)의 오차를 보므로 타깃을 `np.log1p`로 바꿔 학습하고 `np.expm1`로 되돌리면 작은 값을 덜 틀리게 되어 점수가 0.801에서 0.672 정도로 좋아진다.\n선형회귀처럼 음수를 낼 수 있는 모형은 음수 예측이 생겨 RMSLE를 계산할 수 없다(이 데이터에서 LinearRegression은 test 예측 85개가 음수). `np.clip(pred, 0, None)`으로 0 아래를 잘라 둔다.\n검증도 `mean_squared_log_error`에 제곱근을 씌워 같은 지표로 본다. RMSE로 검증하면 큰 값 위주로 맞추게 되어 방향이 달라진다."
+   "explain": "sessions는 0 이상의 카운트이고 오른쪽으로 길게 치우쳐 있다(중앙값 2, 최댓값 100 이상). RMSLE는 log(1+y)의 오차를 보므로 타깃을 `np.log1p`로 바꿔 학습하고 `np.expm1`로 되돌리면 작은 값을 덜 틀리게 되어 점수가 0.830에서 0.718 정도로 좋아진다.\n선형회귀처럼 음수를 낼 수 있는 모형은 음수 예측이 생겨 RMSLE를 계산할 수 없다(이 데이터에서 LinearRegression은 test 예측 87개가 음수). `np.clip(pred, 0, None)`으로 0 아래를 잘라 둔다.\n검증도 `mean_squared_log_error`에 제곱근을 씌워 같은 지표로 본다. RMSE로 검증하면 큰 값 위주로 맞추게 되어 방향이 달라진다."
   },
   {
    "id": "m3-3-1",
@@ -519,8 +519,8 @@
    "type": 1,
    "no": "1-1",
    "points": 10,
-   "title": "모바일 구매율 3위(동률 제거)",
-   "statement": "어느 쇼핑 앱의 광고 그룹별 유입 고객 데이터이다. 한 행이 고객 한 명이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| user_id | 고객 ID |\n| ad_group | 유입된 광고 그룹 |\n| device | 접속 기기(mobile/pc) |\n| page_views | 첫 방문 페이지뷰 |\n| purchased | 첫 구매 여부(1 구매, 0 미구매) |\n\n다음 순서로 수행하시오.\n\n- 1) device가 mobile인 고객만 남긴다.\n- 2) ad_group별 구매율 = purchased의 평균 을 구한다.\n- 3) 구매율을 큰 순으로 늘어놓되, 같은 값은 하나로 취급한다(중복 값 제거).\n\n세 번째로 큰 구매율을 구하시오.\n\n【제출 형식】 반올림하여 소수 셋째 자리까지",
+   "title": "수강 15명 이상 강좌의 이수율 3순위(조밀 순위)",
+   "statement": "어느 대학 온라인 교양 강좌 28개의 한 학기 수강 기록이다. 한 행이 수강 신청 한 건이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| enroll_id | 수강 신청 ID |\n| course | 강좌 코드 |\n| year | 학년(1~4) |\n| forum_posts | 토론 게시판 글 수 |\n| completed | 이수 여부(1 이수, 0 미이수) |\n\n다음 순서로 수행하시오.\n\n- 1) course별 수강 인원(행 수)과 이수율 = completed의 평균 을 구한다.\n- 2) 수강 인원이 15명 미만인 강좌는 제외한다.\n- 3) 남은 강좌에 이수율이 높은 순으로 순위를 매긴다. 이수율이 같은 강좌는 같은 순위를 받고, 다음 순위는 건너뛰지 않고 바로 이어진다(예: 이수율이 0.9, 0.8, 0.8, 0.7이면 순위는 1, 2, 2, 3).\n\n순위가 3인 강좌의 이수율을 구하시오.\n\n【제출 형식】 반올림하여 소수 셋째 자리까지",
    "files": [
     "m4/t1_1.csv"
    ],
@@ -529,11 +529,11 @@
     {
      "label": "답",
      "format": "반올림하여 소수 셋째 자리까지",
-     "value": "0.471"
+     "value": "0.778"
     }
    ],
-   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\nm = df[df['device'] == 'mobile'].groupby('ad_group')['purchased'].mean()\nu = m.drop_duplicates().sort_values(ascending=False)\nprint(round(u.iloc[2], 3))\n",
-   "explain": "0/1 플래그의 평균이 곧 비율이다. 그룹 크기가 작아 구매율이 같은 그룹이 상위권에 있다(이 데이터에서는 8/16과 6/12가 모두 0.5다).\n\n중복을 지우지 않고 nlargest(3)이나 sort_values().iloc[2]를 쓰면 동률 값을 두 번 세어 다른 답이 나온다. drop_duplicates() 대신 np.unique나 m.unique()를 정렬해 써도 된다."
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\ng = df.groupby('course')['completed'].agg(['count', 'mean'])\ng = g[g['count'] >= 15].copy()\ng['rank'] = g['mean'].rank(method='dense', ascending=False)\nprint(round(g.loc[g['rank'] == 3, 'mean'].iloc[0], 3))\n",
+   "explain": "agg(['count', 'mean'])로 인원과 이수율을 한 번에 구하고, 집계한 표에서 인원 조건으로 거른다(행을 거르는 것이 아니라 강좌를 거른다). 인원 조건을 빠뜨리면 수강생이 적어 이수율이 들쭉날쭉한 강좌가 상위에 끼어 답이 바뀐다.\n\n지문의 순위 규칙은 rank(method='dense')다. 기본값 method='average'나 'min'을 쓰면 동률 다음 순위가 건너뛰어진다. 이수율이 같은 강좌가 상위권에 있어서 sort_values().iloc[2]처럼 세 번째 행을 읽으면 동률 값을 두 번 세어 다른 답이 나온다. 같은 순위의 강좌가 여럿이어도 이수율은 같으니 iloc[0]으로 하나만 읽는다."
   },
   {
    "id": "m4-1-2",
@@ -568,8 +568,8 @@
    "type": 1,
    "no": "1-3",
    "points": 10,
-   "title": "야간 진동 Z-점수 이상치 제거 후 라인별 온도",
-   "statement": "어느 공장 생산라인 5개의 설비 센서 기록이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| record_id | 기록 ID |\n| line | 생산라인 |\n| shift | 근무조(주간/야간) |\n| temperature | 설비 온도(℃) |\n| vibration | 진동(mm/s) |\n\n다음 순서로 수행하시오.\n\n- 1) shift가 야간인 기록만 남긴다.\n- 2) 남은 기록의 vibration 평균과 표준편차로 Z-점수 = (vibration − 평균) / 표준편차 를 계산한다. 표준편차는 표본표준편차(n−1로 나눔)를 쓴다.\n- 3) Z-점수의 절댓값이 2.5보다 큰 기록을 제거한다.\n- 4) 남은 기록으로 line별 temperature 평균을 구한다.\n\nline별 temperature 평균 중 가장 큰 값을 구하시오.\n\n【제출 형식】 반올림하여 소수 둘째 자리까지",
+   "title": "여학생 달리기 Z-점수 이상치 제거 후 학교별 격차",
+   "statement": "어느 교육지원청이 관내 중학교 5곳의 학생건강체력평가 기록을 모았다. 한 행이 학생 한 명이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| student_id | 학생 ID |\n| school | 학교 |\n| gender | 성별(F/M) |\n| run_sec | 오래달리기 기록(초) |\n| situp | 윗몸 말아 올리기 횟수(회) |\n\n다음 순서로 수행하시오.\n\n- 1) gender가 F인 학생만 남긴다.\n- 2) 남은 학생의 run_sec 평균과 표준편차로 Z-점수 = (run_sec − 평균) / 표준편차 를 계산한다. 표준편차는 표본표준편차(n−1로 나눔)를 쓴다.\n- 3) Z-점수의 절댓값이 3보다 큰 학생을 제거한다.\n- 4) 남은 학생으로 school별 situp 평균을 구한다.\n\nschool별 situp 평균 가운데 가장 큰 값과 가장 작은 값의 차이를 구하시오.\n\n【제출 형식】 반올림하여 소수 둘째 자리까지",
    "files": [
     "m4/t1_3.csv"
    ],
@@ -578,11 +578,11 @@
     {
      "label": "답",
      "format": "반올림하여 소수 둘째 자리까지",
-     "value": "70.32"
+     "value": "4.71"
     }
    ],
-   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\nn = df[df['shift'] == '야간'].copy()\nn['z'] = (n['vibration'] - n['vibration'].mean()) / n['vibration'].std()\nn = n[n['z'].abs() <= 2.5]\nprint(round(n.groupby('line')['temperature'].mean().max(), 2))\n",
-   "explain": "Z-점수의 평균과 표준편차를 야간 기록에서 다시 계산하는 것이 핵심이다. 전체 데이터로 Z-점수를 내면 야간 진동이 원래 높아 정상 야간 기록까지 이상치로 빠지고 답이 달라진다.\n\nscipy.stats.zscore는 기본 ddof=0이라 지문의 표본표준편차와 다르다. 쓸 거면 ddof=1을 준다."
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\nf = df[df['gender'] == 'F'].copy()\nf['z'] = (f['run_sec'] - f['run_sec'].mean()) / f['run_sec'].std()\nf = f[f['z'].abs() <= 3]\ng = f.groupby('school')['situp'].mean()\nprint(round(g.max() - g.min(), 2))\n",
+   "explain": "Z-점수의 평균과 표준편차는 여학생만 남긴 뒤 다시 계산한다. 남녀를 합친 전체로 계산하면 기록이 빠른 남학생 때문에 평균이 낮아져 여학생 기록이 실제보다 극단적으로 계산된다. 이 데이터에서는 여학생 기준으로는 남아야 할 기록이 하나 더 지워져 답이 달라진다.\n\nscipy.stats.zscore는 기본 ddof=0이라 지문의 표본표준편차와 다르다. 쓸 거면 ddof=1을 준다. 마지막은 학교별 평균의 최댓값 − 최솟값이라 g.max() - g.min()이다."
   },
   {
    "id": "m4-2",
@@ -817,8 +817,8 @@
    "type": 3,
    "no": "3-2",
    "points": 15,
-   "title": "비료 종류별 토마토 수확량 — 일원분산분석",
-   "statement": "어느 농업기술센터가 시험 재배지 78구획에 비료 A, B, C 중 하나를 무작위로 배정하고 구획별 포기당 토마토 수확량을 측정했다. 측정 장비 오류로 일부 구획은 수확량이 비어 있다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| plot_id | 구획 ID |\n| fertilizer | 비료 종류 (A, B, C) |\n| yield_kg | 포기당 수확량(kg) |\n\nyield_kg가 결측인 행을 제거한 뒤, 세 비료의 평균 수확량이 모두 같다는 귀무가설을 일원분산분석(one-way ANOVA)으로 검정하시오. 각 집단은 정규분포를 따르고 분산이 같다고 가정한다.\n\n- 대립가설은 \"적어도 한 비료의 평균 수확량이 다르다\"이며, F검정은 오른쪽 꼬리(상측) 검정이다.\n- scipy.stats의 `f_oneway`나 statsmodels의 `anova_lm`을 써도 된다. 유의수준은 0.05이다.\n\n① F 통계량을 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
+   "title": "피킹 방식별 시간당 처리량 — 일원분산분석",
+   "statement": "어느 물류 창고가 신입 작업자 76명에게 피킹(주문 상품 꺼내기) 방식 세 가지 중 하나를 무작위로 배정하고, 2주 차의 시간당 피킹 건수를 측정했다. 측정 기간에 근무하지 않은 작업자는 기록이 비어 있다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| worker_id | 작업자 ID |\n| method | 피킹 방식 (종이목록, 핸드스캐너, 음성안내) |\n| picks_per_hour | 시간당 피킹 건수 |\n| tenure_m | 이전 직장 물류 경력(개월) |\n\npicks_per_hour가 결측인 행을 제거한 뒤, 세 방식의 평균 picks_per_hour가 모두 같다는 귀무가설을 일원분산분석(one-way ANOVA)으로 검정하시오. 각 집단은 정규분포를 따르고 분산이 같다고 가정한다.\n\n- 대립가설은 \"적어도 한 방식의 평균이 다르다\"이며, F검정은 오른쪽 꼬리(상측) 검정이다.\n- scipy.stats의 `f_oneway`나 statsmodels의 `anova_lm`을 써도 된다. 유의수준은 0.05이다. tenure_m은 쓰지 않는다.\n\n① F 통계량을 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
    "files": [
     "m5/t3_2.csv"
    ],
@@ -827,21 +827,21 @@
     {
      "label": "①",
      "format": "반올림하여 소수 셋째 자리까지",
-     "value": "1.042"
+     "value": "4.854"
     },
     {
      "label": "②",
      "format": "반올림하여 소수 넷째 자리까지",
-     "value": "0.3580"
+     "value": "0.0107"
     },
     {
      "label": "③",
      "format": "기각 또는 채택",
-     "value": "채택"
+     "value": "기각"
     }
    ],
-   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/t3_2.csv')\ndf = df.dropna(subset=['yield_kg'])\n\ngroups = [g['yield_kg'] for _, g in df.groupby('fertilizer')]\na1, a2 = stats.f_oneway(*groups)\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
-   "explain": "결측이 남아 있으면 `f_oneway`가 nan을 돌려준다. 결측 행을 먼저 지운다(평균 대체를 하면 집단 분산이 줄어 F가 달라진다).\nstatsmodels로는 `anova_lm(smf.ols('yield_kg ~ C(fertilizer)', data=df).fit())`의 F, PR(>F) 열이 같은 값이다.\np-value가 0.05보다 크므로 세 비료의 평균 수확량이 다르다고 할 근거가 없다(채택). 사후검정은 기각일 때만 의미가 있다."
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/t3_2.csv')\ndf = df.dropna(subset=['picks_per_hour'])\n\ngroups = [g['picks_per_hour'] for _, g in df.groupby('method')]\na1, a2 = stats.f_oneway(*groups)\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "결측이 남아 있으면 `f_oneway`가 nan을 돌려준다. 결측 행을 먼저 지운다. 전체 평균으로 채우면 빈 자리가 모두 같은 값이 되어 집단 평균과 분산이 바뀌고 F가 달라진다.\nstatsmodels로는 `anova_lm(smf.ols('picks_per_hour ~ C(method)', data=df).fit())`의 F, PR(>F) 열이 같은 값이다.\np-value가 0.05보다 작으므로 기각한다. 적어도 한 방식의 평균 처리량이 다르다는 뜻이며, 어느 방식끼리 다른지는 사후검정(예: Tukey HSD)으로 따로 본다."
   }
  ]
 }

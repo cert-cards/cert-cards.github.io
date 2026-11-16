@@ -5,9 +5,9 @@
 ## pd.read_csv
 
 - Q: `pd.read_csv('data.csv')`가 돌려주는 것 — DataFrame
-  - 첫 줄을 열 이름으로 쓰고(`header=0`), 인덱스는 0부터 새로 매긴다.
+  - 첫 줄을 열 이름으로 쓰고(기본 `header='infer'`는 `names`가 없으면 `header=0`과 같다), 인덱스는 0부터 새로 매긴다.
 - Q: 윈도 엑셀에서 저장한 한글 CSV가 깨지거나 UnicodeDecodeError가 날 때 주는 인자 — `encoding='cp949'`
-  - 기본값은 `'utf-8'`이다. `'euc-kr'`도 쓰지만 cp949가 글자를 더 많이 받는다.
+  - 기본값은 `None`이고 UTF-8로 읽는다. `'euc-kr'`도 쓰지만 cp949가 글자를 더 많이 받는다.
 - Q: 파일의 첫 열을 인덱스로 읽게 하는 인자 — `index_col=0`
   - 인덱스를 함께 저장한 파일을 그냥 읽으면 `Unnamed: 0` 열이 하나 더 생긴다.
 - Q: 제출 파일을 `to_csv`로 저장할 때 인덱스가 열로 붙지 않게 하는 인자 — `index=False`
@@ -77,7 +77,7 @@
 - Q: `df['a']`와 `df[['a']]`의 차이 — 대괄호 하나는 Series, 두 겹은 DataFrame
   - scikit-learn에 열 하나를 넣을 때는 2차원인 `df[['a']]`를 쓴다.
 - Q: 조건에 맞는 행의 한 열 값을 바꾸는 코드 모양 — `df.loc[조건, '열'] = 값`
-  - `df[조건]['열'] = 값`처럼 두 번 나눠 쓰면 복사본에 대입돼 원본이 안 바뀔 수 있다.
+  - `df[조건]['열'] = 값`처럼 두 번 나눠 쓰면 복사본에 대입돼 원본이 바뀌지 않는다(SettingWithCopyWarning).
 
 - Q: 출력 결과는?
   ```text
@@ -386,7 +386,7 @@
 ## select_dtypes
 
 - Q: 문자열(범주형) 열만 고르는 코드 — `df.select_dtypes(include='object')`
-  - 숫자 열만은 `include='number'` 또는 `exclude='object'`.
+  - 숫자 열만은 `include='number'`. `exclude='object'`는 bool·category·날짜 열도 남기고, `include='object'`는 category 열을 빠뜨린다(둘 다는 `include=['object', 'category']`).
 
 - Q: 출력 결과는?
   ```text

@@ -393,7 +393,7 @@
   ```
   - 답: `2.0 40.0 0.0047`
   - 통계량은 첫 인자의 U다. 순서를 바꾸면 n1 × n2 − U(42 − 2)가 나오고 양측 p값은 같다.
-- Q: `mannwhitneyu`의 `method` 기본값 `'auto'`의 동작 — 표본이 작고 동점이 없으면 정확(exact) p값, 아니면 정규근사
+- Q: `mannwhitneyu`의 `method` 기본값 `'auto'`의 동작 — 한쪽 표본이 8개 이하이고 동점이 없으면 정확(exact) p값, 아니면 정규근사
   - `method='asymptotic'`을 주면 작은 표본에서도 근사 p값이 나와 값이 달라진다.
 
 ## stats.kruskal

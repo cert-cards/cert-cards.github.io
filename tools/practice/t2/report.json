@@ -1,0 +1,70 @@
+[
+ {
+  "id": "m1-2",
+  "metric": "rmse",
+  "solution_exam": 32.9233,
+  "solution_exam_sec": 2.1,
+  "stdout": "sales 0 행 수: 197\n검증 RMSE: 35.559173379193794\n(800, 1)\n",
+  "solution_pyo": 32.9233,
+  "solution_pyo_sec": 2.2,
+  "baseline_exam": 49.8734,
+  "baseline_exam_sec": 1.1,
+  "baseline_pyo": 49.8734,
+  "baseline_pyo_sec": 1.2
+ },
+ {
+  "id": "m2-2",
+  "metric": "f1_macro",
+  "solution_exam": 0.8258,
+  "solution_exam_sec": 1.8,
+  "stdout": "status\n정상    0.838667\n주의    0.113667\n고장    0.047667\nName: proportion, dtype: float64\n검증 macro F1: 0.8049978553537963\npred\n정상    845\n주의    110\n고장     45\nName: count, dtype: int64\n",
+  "solution_pyo": 0.8258,
+  "solution_pyo_sec": 2.0,
+  "baseline_exam": 0.7913,
+  "baseline_exam_sec": 0.9,
+  "baseline_pyo": 0.7913,
+  "baseline_pyo_sec": 1.0
+ },
+ {
+  "id": "m3-2",
+  "metric": "rmsle",
+  "solution_exam": 0.7176,
+  "solution_exam_sec": 2.3,
+  "stdout": "count    2600.000000\nmean        5.324615\nstd         8.410450\nmin         0.000000\n25%         1.000000\n50%         3.000000\n75%         6.000000\nmax       104.000000\nName: sessions, dtype: float64\n검증 RMSLE: 0.7010273552227978\n(800, 1)\n",
+  "solution_pyo": 0.7176,
+  "solution_pyo_sec": 2.4,
+  "baseline_exam": 0.8296,
+  "baseline_exam_sec": 1.5,
+  "baseline_pyo": 0.8296,
+  "baseline_pyo_sec": 1.4,
+  "extra_linreg_neg": 87
+ },
+ {
+  "id": "m4-2",
+  "metric": "roc_auc",
+  "solution_exam": 0.7862,
+  "solution_exam_sec": 1.2,
+  "stdout": "{'송도'}\n검증 AUC: 0.7366233178053829\n[0 1]\n(900, 1)\n",
+  "solution_pyo": 0.7862,
+  "solution_pyo_sec": 1.3,
+  "baseline_exam": 0.7778,
+  "baseline_exam_sec": 0.8,
+  "baseline_pyo": 0.7778,
+  "baseline_pyo_sec": 1.0,
+  "extra": 0.6788
+ },
+ {
+  "id": "m5-2",
+  "metric": "mae",
+  "solution_exam": 5.3503,
+  "solution_exam_sec": 3.5,
+  "stdout": "room_id          0\ngu               0\nroom_type        0\narea_m2          0\nfloor            0\nbuilt_year     130\nstation_min    168\nparking          0\nfull_option      0\ndeposit          0\nrent             0\ndtype: int64\n0\n{'강북'}\n검증 MAE: 5.695616666666666\n(1000, 1)\n",
+  "solution_pyo": 5.3503,
+  "solution_pyo_sec": 3.6,
+  "baseline_exam": 5.4201,
+  "baseline_exam_sec": 1.2,
+  "baseline_pyo": 5.4201,
+  "baseline_pyo_sec": 1.3,
+  "extra": 7.7592
+ }
+]

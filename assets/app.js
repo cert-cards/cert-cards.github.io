@@ -58,7 +58,7 @@ async function loadInfo(){
   KEY = INFO.storageKey || DECK;
   mode = store.get('mode', 'term');
   flags = new Set(store.get('flags', []));
-  $('#deckTitle').textContent = INFO.title + ' 플래시카드';
+  $('#deckTitle').textContent = INFO.title;
   $('#deckNotes').innerHTML = (INFO.notes || []).map(n => '<br>' + esc(n)).join('');
   SECTIONS = INFO.sections || [{ id: '', label: '', views: ['cards'], files: INFO.files, unitLabel: INFO.unitLabel }];
 }

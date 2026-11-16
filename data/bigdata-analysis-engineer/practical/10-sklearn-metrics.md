@@ -197,7 +197,7 @@
 ## roc_auc_score
 
 - Q: roc_auc_score의 두 번째 인자로 넣는 것 — 양성 클래스의 확률이나 점수(`predict_proba(X)[:, 1]`)
-  - `predict`의 0/1을 넣으면 순위 정보가 사라져 AUC가 낮아진다.
+  - `predict`의 0/1을 넣으면 순위 정보가 사라져 AUC가 대개 낮아진다.
 - Q: AUC 값 0.5의 뜻 — 무작위로 찍는 수준
   - 1에 가까울수록 양성에 더 높은 점수를 매긴 것이다.
 - Q: 다중 분류 AUC를 roc_auc_score로 구할 때 필요한 것 — 클래스별 확률 전체(n × k 배열)와 `multi_class='ovr'`(또는 `'ovo'`)
