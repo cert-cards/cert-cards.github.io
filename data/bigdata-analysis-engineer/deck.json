@@ -9,12 +9,21 @@
     {
       "id": "written",
       "label": "필기",
-      "unitLabel": "과목",
+      "unitLabel": "단원",
       "views": [
         "cards",
         "quiz"
       ],
-      "files": []
+      "files": [
+        "written/01a-planning.md",
+        "written/01b-planning.md",
+        "written/02a-exploration.md",
+        "written/02b-exploration.md",
+        "written/03a-modeling.md",
+        "written/03b-modeling.md",
+        "written/04a-interpretation.md",
+        "written/04b-interpretation.md"
+      ]
     },
     {
       "id": "practical",
