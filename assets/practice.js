@@ -121,7 +121,7 @@ window.Practice = (() => {
       const done = ps.filter(p => (status(p) || {}).done).length;
       const last = setId && hist[setId] ? `<span class="pr-last">최근 시험 ${hist[setId].total}점</span>` : '';
       const head = `<div class="pr-gt"><span>${esc(t)}</span>${inExam() ? '' : `<span>${done}/${ps.length}</span>`}</div>` +
-        (setId ? `<div class="pr-gx"><button class="btn pr-start" data-set="${esc(setId)}">시험 모드로 풀기 (180분)</button>${last}</div>` : '');
+        (setId && (BANK.sets.find(x => x.id === setId) || {}).exam !== false ? `<div class="pr-gx"><button class="btn pr-start" data-set="${esc(setId)}">시험 모드로 풀기 (180분)</button>${last}</div>` : '');
       return `<div class="pr-grp">${head}` + ps.map(p => {
         const s = inExam() ? null : status(p);
         const dot = inExam() ? ((exam.ans[p.id] || exam.sub[p.id]) ? 'try' : '') : (s ? (s.done ? 'ok' : 'try') : '');

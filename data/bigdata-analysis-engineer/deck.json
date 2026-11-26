@@ -31,6 +31,7 @@
       "unitLabel": "단원",
       "views": [
         "cards",
+        "summary",
         "practice"
       ],
       "files": [
@@ -45,7 +46,12 @@
         "practical/09-sklearn-models.md",
         "practical/10-sklearn-metrics.md"
       ],
-      "practice": "practice/problems.json"
+      "practice": "practice/problems.json",
+      "summary": [
+        "summary/01-type1.md",
+        "summary/02-type2.md",
+        "summary/03-type3.md"
+      ]
     }
   ]
 }

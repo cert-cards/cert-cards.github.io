@@ -69,3 +69,63 @@ const fmt = s => s.split(/(```\w*\n[\s\S]*?\n```)/).map(part => {
   const m = part.match(/^```(\w*)\n([\s\S]*?)\n```$/);
   return m ? `<pre class="code"><code>${esc(m[2])}</code></pre>` : inline(part.replace(/^\n|\n$/g, ''));
 }).join('');
+
+// 요약 문서용 Markdown: # 제목 · ## · ### · 문단 · - 목록 · | 표 | · ```코드``` · > 메모 · `인라인 코드`
+// 돌려주는 값: { title, html, heads: [{ level, text, id }] }
+function mdDoc(md, idPrefix){
+  const lines = md.replace(/\r/g, '').split('\n');
+  const out = [], heads = [];
+  let title = '', i = 0, hn = 0;
+  const para = [];
+  const flush = () => { if (para.length){ out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para.length = 0; } };
+  while (i < lines.length){
+    const l = lines[i];
+    let m;
+    if (/^```/.test(l)){
+      flush();
+      const lang = l.slice(3).trim(), body = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) body.push(lines[i++]);
+      i++;
+      out.push(`<pre class="code" data-lang="${esc(lang)}"><code>${esc(body.join('\n'))}</code></pre>`);
+      continue;
+    }
+    if ((m = l.match(/^(#{1,3}) (.+)/))){
+      flush();
+      const level = m[1].length, text = m[2].trim();
+      if (level === 1 && !title){ title = text; i++; continue; }
+      const id = `${idPrefix}-h${hn++}`;
+      heads.push({ level, text, id });
+      out.push(`<h${level + 1} id="${id}">${inline(text)}</h${level + 1}>`);
+      i++; continue;
+    }
+    if (/^\s*\|/.test(l)){
+      flush();
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells = rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r))
+        .map(r => r.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map(c => c.trim()));
+      out.push('<div class="sm-tbl"><table><thead><tr>' + cells[0].map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>' +
+        cells.slice(1).map(r => '<tr>' + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
+      continue;
+    }
+    if (/^- /.test(l)){
+      flush();
+      const items = [];
+      while (i < lines.length && /^- /.test(lines[i])) items.push(lines[i++].slice(2));
+      out.push('<ul>' + items.map(t => `<li>${inline(t)}</li>`).join('') + '</ul>');
+      continue;
+    }
+    if (/^> ?/.test(l)){
+      flush();
+      const body = [];
+      while (i < lines.length && /^> ?/.test(lines[i])) body.push(lines[i++].replace(/^> ?/, ''));
+      out.push('<div class="sm-note">' + body.map(inline).join('<br>') + '</div>');
+      continue;
+    }
+    if (!l.trim()){ flush(); i++; continue; }
+    para.push(l); i++;
+  }
+  flush();
+  return { title, html: out.join('\n'), heads };
+}

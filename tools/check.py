@@ -190,6 +190,7 @@ def check_decks():
         if not info.get("title"):
             fail("`title`이 없다", dj)
         sections = info.get("sections")
+        docs = []   # 요약 문서: 카드가 아니라 카드 검사에서 뺀다
         if sections is None:
             if not info.get("files"):
                 fail("`files`가 없다", dj)
@@ -200,10 +201,17 @@ def check_decks():
                 for key in ("id", "label", "views"):
                     if not sec.get(key):
                         fail(f"sections의 `{key}`가 없다", dj)
-                bad = set(sec.get("views", [])) - {"cards", "quiz", "practice"}
+                bad = set(sec.get("views", [])) - {"cards", "quiz", "summary", "practice"}
                 if bad:
                     fail(f"모르는 views {sorted(bad)}", dj)
                 files += sec.get("files", [])
+                if "summary" in sec.get("views", []):
+                    if not sec.get("summary"):
+                        fail("summary 보기가 있는데 `summary` 파일 목록이 없다", dj)
+                    for f in sec.get("summary", []):
+                        if not (folder / f).exists():
+                            fail(f"summary에 있는 `{f}`이 폴더에 없다", dj)
+                        docs.append(f)
                 if "practice" in sec.get("views", []):
                     check_practice(folder, sec.get("practice"), dj)
         if len(files) != len(set(files)):
@@ -212,7 +220,7 @@ def check_decks():
             if not (folder / f).exists():
                 fail(f"files에 있는 `{f}`가 폴더에 없다", dj)
         for md in sorted(folder.rglob("*.md")):
-            if str(md.relative_to(folder)) not in files:
+            if str(md.relative_to(folder)) not in files + docs:
                 fail(f"`{md.relative_to(folder)}`이 deck.json files에 없다 — 사이트에 안 보인다", dj)
         if not page.exists():
             fail(f"`{did}/index.html` 페이지가 없다", DATA / "decks.json")

@@ -157,3 +157,38 @@ footer{color:var(--ink-3);font-size:12px;text-align:center;padding-block:24px 40
 .qz.inline .qz-stage{align-items:flex-start;padding-top:28px}
 /* 구역 탭이 있는 덱: 머리 막대와 카드 화면을 실습 화면과 같은 폭으로 — 탭을 옮겨도 머리가 흔들리지 않는다 */
 body.wide .bar-in,body.wide .wrap{max-width:1440px}
+/* 요약 탭: 작업형별 문서, 왼쪽 절 목차 */
+.sm{max-width:1440px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.sm-tabs{margin-bottom:14px}
+.sm-tabs button[aria-pressed="true"]{color:var(--accent)}
+.sm-body{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;align-items:start}
+.sm-toc{position:sticky;top:90px;max-height:calc(100vh - 110px);overflow:auto;font-size:13px;display:flex;flex-direction:column}
+.sm-toc a{color:var(--ink-2);text-decoration:none;padding:4px 8px;border-radius:6px;line-height:1.35}
+.sm-toc a:hover{background:var(--surface-2);color:var(--ink)}
+.sm-doc{max-width:900px;min-width:0;font-size:15px;line-height:1.7}
+.sm-doc .sm-title{font-size:24px;margin:0 0 12px;letter-spacing:-.01em;white-space:normal}
+.sm-doc h2{font-size:19px;margin:30px 0 10px;padding-top:8px;border-top:1px solid var(--line);scroll-margin-top:80px}
+.sm-doc h3{font-size:16px;margin:20px 0 8px;scroll-margin-top:80px}
+.sm-doc h4{font-size:15px;margin:16px 0 6px}
+.sm-doc p{margin:0 0 10px}
+.sm-doc ul{margin:0 0 12px;padding-left:20px}
+.sm-doc li{margin:2px 0}
+.sm-doc pre.code{margin:8px 0 14px;font-size:13px}
+.sm-note{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;margin:8px 0 14px;font-size:14px}
+.sm-tbl{overflow-x:auto;margin:8px 0 14px}
+.sm-tbl table{border-collapse:collapse;font-size:13.5px;width:100%}
+.sm-tbl th,.sm-tbl td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+.sm-tbl th{background:var(--surface-2);font-weight:700}
+.sm-tbl td code{white-space:nowrap}
+@media (max-width:860px){ .sm-body{grid-template-columns:minmax(0,1fr)} .sm-toc{display:none} .sm-tbl td code{white-space:normal} }
+/* 요약 코드 색 (Prism 토큰) — 밝은 테마 / 어두운 테마 */
+:root{--tk-kw:#a626a4;--tk-str:#3f8a3a;--tk-com:#8b8d93;--tk-num:#9a6400;--tk-fn:#3567d6;--tk-bi:#b06b00}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--tk-kw:#c678dd;--tk-str:#98c379;--tk-com:#7f848e;--tk-num:#d19a66;--tk-fn:#61afef;--tk-bi:#e5c07b} }
+:root[data-theme="dark"]{--tk-kw:#c678dd;--tk-str:#98c379;--tk-com:#7f848e;--tk-num:#d19a66;--tk-fn:#61afef;--tk-bi:#e5c07b}
+pre.code .token.keyword,pre.code .token.boolean{color:var(--tk-kw)}
+pre.code .token.string,pre.code .token.triple-quoted-string,pre.code .token.string-interpolation{color:var(--tk-str)}
+pre.code .token.comment{color:var(--tk-com);font-style:italic}
+pre.code .token.number{color:var(--tk-num)}
+pre.code .token.function{color:var(--tk-fn)}
+pre.code .token.builtin,pre.code .token.class-name{color:var(--tk-bi)}
+pre.code .token.operator,pre.code .token.punctuation{color:inherit}

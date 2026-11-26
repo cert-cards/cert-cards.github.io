@@ -48,6 +48,7 @@ document.body.insertAdjacentHTML('afterbegin', `
   <nav class="toc" id="toc" aria-label="목차"></nav>
   <main id="main"></main>
 </div>
+<div id="summaryView" hidden></div>
 <div id="practiceView" hidden></div>
 <footer>카드를 누르면 정답이 보이고, 다시 누르면 가려집니다 · 책갈피 표시는 이 브라우저에만 저장됩니다<span id="deckNotes"></span><br><a href="../">다른 자격증</a> · <a href="https://github.com/cert-cards/cert-cards.github.io/issues">틀린 내용 제보</a></footer>
 `);
@@ -81,7 +82,7 @@ const revealed = new Set();
 let total = 0;
 
 const flagSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
-const VIEW_LABEL = { cards: '카드', quiz: '퀴즈', practice: '실습' };
+const VIEW_LABEL = { cards: '카드', quiz: '퀴즈', summary: '요약', practice: '실습' };
 
 function build(){
   const main = $('#main'), toc = $('#toc');
@@ -209,7 +210,7 @@ function drawTabs(){
     `</div></div>`).join('');
 }
 function parseHash(){
-  const m = location.hash.match(/^#([\w-]+)\/(cards|quiz|practice)$/);
+  const m = location.hash.match(/^#([\w-]+)\/(cards|quiz|summary|practice)$/);
   const sec = m && SECTIONS.find(s => s.id === m[1] && s.views.includes(m[2]));
   if (sec) return [sec, m[2]];
   const saved = store.get('tab', null);
@@ -224,11 +225,11 @@ async function route(){
   SEC = sec; VIEW = view;
   if (INFO.sections) store.set('tab', [SEC.id, VIEW]);
   drawTabs();
-  const practice = VIEW === 'practice', quiz = VIEW === 'quiz' && !!INFO.sections;
+  const practice = VIEW === 'practice', quiz = VIEW === 'quiz' && !!INFO.sections, summary = VIEW === 'summary';
   // 머리 막대(제목·진행·탭)는 어느 보기에서나 그대로 둔다. 카드용 도구 줄만 카드 보기에서 보인다
-  $('#cardsView').hidden = practice || quiz; $('#practiceView').hidden = !practice;
-  $('#ctl').hidden = practice || quiz; $('#pbar').hidden = practice;
-  $('#tocBtn').hidden = practice || quiz;
+  $('#cardsView').hidden = practice || quiz || summary; $('#practiceView').hidden = !practice; $('#summaryView').hidden = !summary;
+  $('#ctl').hidden = practice || quiz || summary; $('#pbar').hidden = practice || summary;
+  $('#tocBtn').hidden = practice || quiz || summary;
   document.body.classList.toggle('wide', !!INFO.sections);   // 구역 탭이 있는 덱은 모든 보기를 같은 폭(1440px)으로
   $('#quizBtn').hidden = !!INFO.sections;          // 구역이 있는 덱은 퀴즈가 탭이다
   if (secChanged){
@@ -236,7 +237,9 @@ async function route(){
     build(); paintAll(); applyFilter();
   }
   updateProg();
-  if (practice){ if (!$('#qz').hidden) qzClose(true); await openPractice(); return; }
+  if (practice || summary){ if (!$('#qz').hidden) qzClose(true); }
+  if (practice){ await openPractice(); return; }
+  if (summary){ await openSummary(); return; }
   if (VIEW === 'quiz') qzOpen(); else if (!$('#qz').hidden) qzClose(true);
 }
 function setTab(secId, view){
@@ -247,7 +250,52 @@ $('#tabs').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
   if (b) setTab(b.dataset.sec, b.dataset.view);
 });
-window.addEventListener('hashchange', () => { if (INFO.sections && /^#[\w-]+\/(cards|quiz|practice)$/.test(location.hash)) route(); });
+window.addEventListener('hashchange', () => { if (INFO.sections && /^#[\w-]+\/(cards|quiz|summary|practice)$/.test(location.hash)) route(); });
+
+// 요약 문서의 python 코드 블록에 색을 입힌다 (Prism, 요약 탭을 열 때만 받는다)
+const PRISM = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/';
+let prismLoaded = null;
+function loadScript(src){ return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+function highlightCode(root){
+  if (!prismLoaded){
+    window.Prism = window.Prism || { manual: true };
+    prismLoaded = loadScript(PRISM + 'prism.min.js').then(() => loadScript(PRISM + 'components/prism-python.min.js'));
+  }
+  prismLoaded.then(() => root.querySelectorAll('pre.code[data-lang="python"] code').forEach(c => {
+    c.classList.add('language-python'); window.Prism.highlightElement(c);
+  })).catch(() => {});   // 못 받으면 색 없이 그대로
+}
+
+// 요약 탭: 구역의 summary 문서(Markdown)를 작업형별 탭으로 보여 준다. 왼쪽은 절 목차
+let summaryFor = null;
+async function openSummary(){
+  if (summaryFor === SEC) return;
+  summaryFor = SEC;
+  const box = $('#summaryView');
+  const files = SEC.summary || [];
+  if (!files.length){ box.innerHTML = '<p class="empty">요약은 준비 중입니다.</p>'; return; }
+  box.innerHTML = '<p class="empty">불러오는 중</p>';
+  const docs = (await getTexts(files)).map((md, i) => mdDoc(md, 'd' + i));
+  box.innerHTML = `<div class="sm"><div class="seg sm-tabs" role="group" aria-label="요약 문서">` +
+    docs.map((d, i) => `<button data-i="${i}">${esc(d.title.split(' · ')[0])}</button>`).join('') +
+    `</div><div class="sm-body"><nav class="sm-toc" aria-label="요약 목차"></nav><article class="sm-doc"></article></div></div>`;
+  const show = i => {
+    const d = docs[i];
+    store.set('sumDoc:' + SEC.id, i);
+    box.querySelectorAll('.sm-tabs button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.i === i));
+    box.querySelector('.sm-doc').innerHTML = `<h1 class="sm-title">${inline(d.title)}</h1>` + d.html;
+    box.querySelector('.sm-toc').innerHTML = d.heads.filter(h => h.level === 2)
+      .map(h => `<a href="#${h.id}">${inline(h.text)}</a>`).join('');
+    highlightCode(box.querySelector('.sm-doc'));
+  };
+  box.querySelector('.sm-tabs').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b){ show(+b.dataset.i); window.scrollTo(0, 0); } });
+  box.querySelector('.sm-toc').addEventListener('click', e => {
+    const a = e.target.closest('a'); if (!a) return;
+    e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ block: 'start' });
+  });
+  const last = store.get('sumDoc:' + SEC.id, docs.length - 1);
+  show(Math.min(Math.max(0, last), docs.length - 1));
+}
 
 // 실습 탭: 처음 열 때만 실습 화면 코드를 불러온다 (파이썬은 그 안에서 또 따로)
 let practiceLoaded = null;
@@ -255,7 +303,7 @@ function openPractice(){
   if (!practiceLoaded){
     practiceLoaded = new Promise((ok, no) => {
       const s = document.createElement('script');
-      s.src = '../assets/practice.js?v=10'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
+      s.src = '../assets/practice.js?v=11'; s.onload = ok; s.onerror = () => no(new Error('practice.js'));
       document.head.appendChild(s);
     }).then(() => window.Practice.mount($('#practiceView'), { base: BASE, deck: DECK, info: INFO, section: SEC }));
   }
