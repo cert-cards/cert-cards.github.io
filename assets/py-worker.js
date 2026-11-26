@@ -1,13 +1,18 @@
 // 실습 탭의 파이썬: Pyodide(브라우저에서 도는 CPython)를 웹 워커에서 돌린다.
 // 화면이 멈추지 않고, 정지할 때는 워커를 통째로 끝내고 새로 만든다.
-const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
-importScripts(PYODIDE + 'pyodide.js');
+// 같은 파일을 주는 jsDelivr 주소 세 곳을 차례로 시도한다 (한 곳이 장애일 때 대비)
+const PYODIDE_CDNS = ['cdn', 'fastly', 'gcore'].map(h => `https://${h}.jsdelivr.net/pyodide/v0.26.4/full/`);
+let PYODIDE = null;
+for (const base of PYODIDE_CDNS){
+  try { importScripts(base + 'pyodide.js'); PYODIDE = base; break; } catch (_) { /* 다음 주소로 */ }
+}
 
 const HOME = '/home/pyodide';
 const say = (type, data) => postMessage(Object.assign({ type }, data));
 let py = null;
 
 const ready = (async () => {
+  if (!PYODIDE) throw new Error('파이썬 파일을 받을 CDN에 연결하지 못했습니다');
   say('status', { s: '파이썬을 불러오는 중' });
   py = await loadPyodide({ indexURL: PYODIDE });
   say('status', { s: 'numpy · pandas를 불러오는 중' });

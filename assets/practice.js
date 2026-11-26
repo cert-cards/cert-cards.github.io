@@ -141,8 +141,7 @@ window.Practice = (() => {
     q('#prWhere').textContent = `${setOf(p).title || ''} · ${p.no} · ${TYPE_NAME[p.type]}${p.points ? ' · ' + p.points + '점' : ''}`;
     q('#prTitle').textContent = p.title;
     q('#prStmt').innerHTML = md(p.statement);
-    q('#prEditor').value = st.get('c:' + p.id, null) ?? (p.starter || '');
-    gutter();
+    code.set(st.get('c:' + p.id, null) ?? (p.starter || ''));
     q('#prOut').textContent = '';
     q('#prSol').hidden = true; q('#prSolBtn').setAttribute('aria-expanded', 'false'); q('#prSolBtn').textContent = '풀이 보기';
     q('#prSol').innerHTML = (p.solution ? fmt('```python\n' + p.solution.replace(/\n$/, '') + '\n```') : '') + md(p.explain);
@@ -340,7 +339,7 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
   function append(s, cls){ const sp = document.createElement('span'); if (cls) sp.className = cls; sp.textContent = s; q('#prOut').appendChild(sp); }
   function makeWorker(){
     ready = false; filesSent = null; q('#prRun').disabled = true;
-    worker = new Worker('../assets/py-worker.js?v=6');
+    worker = new Worker('../assets/py-worker.js?v=7');
     worker.onmessage = e => {
       const m = e.data;
       if (m.type === 'status') setStatus(m.s + ' …');
@@ -364,7 +363,7 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
     q('#prOut').textContent = '';
     q('#prRun').disabled = true; q('#prStop').hidden = false;
     setStatus('실행 중 …');
-    worker.postMessage({ type: 'run', code: q('#prEditor').value, clean: cur.submit ? cur.submit.file : 'result.csv' });
+    worker.postMessage({ type: 'run', code: code.get(), clean: cur.submit ? cur.submit.file : 'result.csv' });
     timer = setTimeout(() => stop(`${RUN_LIMIT}초가 넘어 멈췄습니다 (시험도 한 번 실행은 1분까지입니다)`), RUN_LIMIT * 1000);
     if (!inExam() && !status(cur)) { st.set('s:' + cur.id, { done: false }); drawList(); }
   }
@@ -374,6 +373,60 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
     worker.terminate(); finish(); after = null;
     append('\n' + (why || '멈췄습니다') + '\n', 'error');
     makeWorker(); setStatus('파이썬을 다시 불러오는 중 …');
+  }
+
+  // ── 편집기: 넓은 화면은 Monaco(VS Code 편집기, Python 색칠), 터치 기기·불러오기 실패 때는 textarea + 줄 번호
+  //    시험장처럼 자동완성·힌트는 끈다
+  const MONACO = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+  let mon = null, saveT = null;
+  const code = {
+    get(){ return mon ? mon.getValue() : q('#prEditor').value; },
+    set(v){ if (mon){ if (mon.getValue() !== v) mon.setValue(v); mon.setScrollTop(0); } else { q('#prEditor').value = v; gutter(); } }
+  };
+  function saveSoon(){
+    clearTimeout(saveT);
+    saveT = setTimeout(() => { if (!cur) return; const v = code.get(); st.set('c:' + cur.id, v === (cur.starter || '') ? undefined : v); }, 300);
+  }
+  function loadMonaco(){
+    if (window.monaco) return Promise.resolve(window.monaco);
+    return new Promise((ok, no) => {
+      // 다른 출처(CDN)의 워커를 쓰려면 같은 출처 data: 주소로 감싸 importScripts 한다
+      window.MonacoEnvironment = { getWorkerUrl: () => 'data:text/javascript;charset=utf-8,' + encodeURIComponent(
+        `self.MonacoEnvironment={baseUrl:'${MONACO}/../'};importScripts('${MONACO}/base/worker/workerMain.js');`) };
+      const s = document.createElement('script');
+      s.src = MONACO + '/loader.js';
+      s.onload = () => { window.require.config({ paths: { vs: MONACO } }); window.require(['vs/editor/editor.main'], () => ok(window.monaco), no); };
+      s.onerror = () => no(new Error('monaco loader'));
+      document.head.appendChild(s);
+    });
+  }
+  const edBg = () => getComputedStyle(q('.pr')).getPropertyValue('--ed-bg').trim() || '#1b1d23';
+  function edTheme(m){
+    m.editor.defineTheme('cc-dark', { base: 'vs-dark', inherit: true, rules: [], colors: { 'editor.background': edBg(), 'editorGutter.background': edBg() } });
+    m.editor.setTheme('cc-dark');
+  }
+  async function mountMonaco(){
+    if (matchMedia('(pointer: coarse)').matches) return;          // 휴대폰·태블릿은 textarea가 더 잘 된다
+    let m;
+    try { m = await loadMonaco(); } catch (e) { return; }           // 못 받으면 textarea 그대로
+    const box = document.createElement('div');
+    box.className = 'pr-monaco';
+    q('.pr-ide-body').appendChild(box);
+    edTheme(m);
+    mon = m.editor.create(box, {
+      value: q('#prEditor').value, language: 'python', theme: 'cc-dark',
+      fontSize: 14, lineHeight: 22, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+      tabSize: 4, insertSpaces: true, detectIndentation: false,
+      minimap: { enabled: false }, automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 12, bottom: 12 },
+      quickSuggestions: false, suggestOnTriggerCharacters: false, wordBasedSuggestions: 'off', parameterHints: { enabled: false },
+      snippetSuggestions: 'none', tabCompletion: 'off', acceptSuggestionOnEnter: 'off', hover: { enabled: false }, lightbulb: { enabled: 'off' },
+      renderLineHighlight: 'line', scrollbar: { alwaysConsumeMouseWheel: false }, fixedOverflowWidgets: true
+    });
+    q('.pr-ide-body').classList.add('has-monaco');
+    mon.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Enter, run);
+    mon.onDidChangeModelContent(saveSoon);
+    // 다크/라이트 전환에 편집기 바탕을 맞춘다
+    new MutationObserver(() => edTheme(m)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 
   // 줄 번호: 편집기의 줄 수만큼 숫자를 세우고 스크롤을 같이 움직인다
@@ -405,7 +458,7 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
     q('#prExamEnd').addEventListener('click', () => endExam(false));
     q('#prRun').addEventListener('click', run);
     q('#prStop').addEventListener('click', () => stop());
-    q('#prReset').addEventListener('click', () => { q('#prEditor').value = cur.starter || ''; st.set('c:' + cur.id, undefined); gutter(); });
+    q('#prReset').addEventListener('click', () => { code.set(cur.starter || ''); st.set('c:' + cur.id, undefined); });
     q('#prSolBtn').addEventListener('click', () => {
       const open = q('#prSol').hidden;
       q('#prSol').hidden = !open; q('#prSolBtn').setAttribute('aria-expanded', open); q('#prSolBtn').textContent = open ? '풀이 가리기' : '풀이 보기';
@@ -413,13 +466,8 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
     const go = d => { const l = order(), i = l.indexOf(cur) + d; if (l[i]){ open(l[i]); window.scrollTo(0, 0); } };
     q('#prPrev').addEventListener('click', () => go(-1));
     q('#prNext').addEventListener('click', () => go(1));
-    let saveT = null;
     const ed = q('#prEditor'), gut = q('#prGutter');
-    ed.addEventListener('input', () => {
-      gutter();
-      clearTimeout(saveT);
-      saveT = setTimeout(() => { const v = ed.value; st.set('c:' + cur.id, v === (cur.starter || '') ? undefined : v); }, 300);
-    });
+    ed.addEventListener('input', () => { gutter(); saveSoon(); });
     ed.addEventListener('scroll', () => { gut.scrollTop = ed.scrollTop; });
     ed.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); run(); return; }
@@ -436,12 +484,13 @@ ${!inExam() && r.baseline !== undefined ? `<p class="pr-rule">참고: 범주형�
   async function mount(el, c){
     root = el; ctx = c;
     if (!document.querySelector('link[data-practice-css]')){
-      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=8'; l.dataset.practiceCss = '';
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '../assets/practice.css?v=9'; l.dataset.practiceCss = '';
       document.head.appendChild(l);
     }
     mode = st.get('mode', 'set');
     exam = st.get('exam', null);
     skeleton(); bind(); measure();
+    mountMonaco();
     BANK = JSON.parse(await getText(ctx.base + ctx.section.practice));
     if (!BANK.problems.length){ q('.pr-split').innerHTML = '<p class="empty">실습 문제를 준비 중입니다.</p>'; return; }
     makeWorker();
