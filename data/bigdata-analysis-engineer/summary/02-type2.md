@@ -143,7 +143,7 @@ pd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)
 | 합쳐서 원핫 | concat → `get_dummies` → `iloc` | 기본. test에만 있는 범주도 열이 생긴다 |
 | 따로 원핫 후 맞추기 | `get_dummies` 두 번 → `reindex(columns=..., fill_value=0)` | test에만 있는 범주는 버려진다 |
 | 정수 코드 | concat → `astype('category').cat.codes` | 범주가 많을 때, 트리 모델에만 |
-| 스케일링 | `StandardScaler().fit(X_tr)` 후 `transform` | 선형 모델일 때만. 트리는 필요 없다 |
+| 스케일링 | `StandardScaler().fit(X_tr)` 후 `transform` | 선형 모델, KNN, SVM일 때. 트리는 필요 없다 |
 
 ```python
 # 따로 원핫하고 열 맞추기
@@ -308,7 +308,7 @@ print(train[cat_cols].nunique().sort_values(ascending=False))   # 고유값이 �
 
 - 모델을 바꿔도 같은 코드가 돌게 결측은 미리 채워 두는 편이 안전하다.
 - 제12회 체험환경에는 lightgbm 4.5.0과 xgboost 2.1.2도 있다. 회차마다 바뀔 수 있으니 시험장에서 버전부터 확인한다. lightgbm은 `verbose=-1`을 줘야 학습 로그가 쏟아지지 않는다.
-- LogisticRegression은 스케일링이 필요하고 `max_iter`를 늘려야 경고가 사라지는 경우가 많다. 랜덤포레스트가 손이 덜 간다.
+- LogisticRegression은 스케일링을 해야 수렴이 잘 되고 `max_iter`를 늘려야 경고가 사라지는 경우가 많다. 랜덤포레스트가 손이 덜 간다.
 
 ## 10. 시험장 체크리스트
 

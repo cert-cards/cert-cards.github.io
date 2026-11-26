@@ -23,11 +23,11 @@ print(df.shape, df.isna().sum().to_dict())
 
 | 하고 싶은 것 | 코드 | 결과 |
 |---|---|---|
-| 소수 n째 자리 반올림 | `round(v, 2)` | 정확히 .5면 짝수 쪽 (`round(2.5)` → 2) |
+| 소수 n째 자리 반올림 | `round(v, 2)` | 정확히 .5면 짝수 쪽 (`round(2.5)` → 2). `round(2.675, 2)` → 2.67은 부동소수 오차 |
 | 소수점 아래 버림 (양수) | `int(v)` | 음수는 0 쪽 (`int(-3.9)` → −3) |
 | 아래로 버림 (음수 포함) | `math.floor(v)` | `math.floor(-3.9)` → −4 |
 | 올림 | `math.ceil(v)` | |
-| 소수 둘째 자리 아래 버림 | `math.floor(v * 100) / 100` | |
+| 소수 둘째 자리 아래 버림 | `math.floor(round(v * 100, 9)) / 100` | `0.29 * 100`이 28.999…라 round로 한 번 감싼다 |
 | Series 한 칸만 꺼내기 | `s.iloc[0]` · `s.item()` | 출력에 인덱스가 섞이지 않게 |
 
 ## 1. 무엇을 하나 → 함수
@@ -50,7 +50,7 @@ print(df.shape, df.isna().sum().to_dict())
 | 중복 | `duplicated().sum()` · `drop_duplicates(subset=...)` | 처음 것은 중복으로 안 센다 |
 | 분위수 | `df['x'].quantile(0.75)` | 선형 보간, NaN 건너뜀 |
 | 표준편차·분산 | `std()` · `var()` | pandas 기본 ddof=1, numpy 기본 0 |
-| 왜도·첨도 | `skew()` · `kurt()` | 첨도는 정규분포가 0인 값 |
+| 왜도·첨도 | `skew()` · `kurt()` | 첨도는 정규분포가 0인 값. scipy는 `bias=False`를 줘야 같은 값 |
 | 상관계수 | `df['x'].corr(df['y'])` | 스피어만은 `method='spearman'` |
 | 날짜로 바꾸기 | `pd.to_datetime(df['date'])` | 붙은 숫자는 `format='%Y%m%d'` |
 | 연·월·요일 | `.dt.year` · `.dt.month` · `.dt.dayofweek` | 월요일 0, 토·일은 5·6 |
@@ -61,7 +61,7 @@ print(df.shape, df.isna().sum().to_dict())
 | 글자 수·앞 n글자 | `str.len()` · `str[:3]` | |
 | 표 모양 바꾸기 | `pivot_table` · `melt` · `crosstab` | pivot_table 기본 aggfunc는 mean |
 | 표 합치기 | `pd.merge(a, b, on='id', how='left')` | 쌓기는 `pd.concat` |
-| 구간 나누기 | `pd.cut` · `pd.qcut` | cut은 오른쪽 끝 포함 |
+| 구간 나누기 | `pd.cut` · `pd.qcut` | cut은 오른쪽 끝 포함, 첫 경계값은 `include_lowest=True` |
 | 이전 행 값·누적 | `shift(1)` · `diff()` · `cumsum()` | |
 
 ## 2. 고르기 · 정렬 · k번째
@@ -129,7 +129,7 @@ print(d.duplicated(subset=['grp']).sum())                 # grp 기준 중복 �
 print(d.drop_duplicates(subset=['grp'], keep='last').shape[0])
 ```
 
-- 채우기는 `d['x'] = d['x'].fillna(v)`로 쓴다. `inplace=True`는 2.2에서 경고가 나고 원본이 안 바뀔 수 있다.
+- 채우기는 `d['x'] = d['x'].fillna(v)`로 쓴다. `d['x'].fillna(v, inplace=True)`는 2.2에서 경고가 나고 pandas 3부터는 원본이 안 바뀐다.
 - 채우기 전 통계(평균·표준편차)를 먼저 변수에 받아 두면 「채우기 전후 차이」 문제가 쉽다.
 - 같은 그룹 안에서 앞 날짜 값으로 채우려면 먼저 날짜로 정렬한 뒤 `groupby('grp')['x'].ffill()`.
 
@@ -226,7 +226,7 @@ print(df['y'].diff().round(1).tolist()[:3])              # 이전 행과의 차�
 ```
 
 - `pivot_table`의 `aggfunc` 기본값은 평균이다. 합계면 `'sum'`, 개수면 `'count'`.
-- `pd.cut`은 (0, 4], (4, 5]처럼 오른쪽 끝을 포함한다. 왼쪽을 포함하려면 `right=False`.
+- `pd.cut`은 (0, 4], (4, 5]처럼 오른쪽 끝을 포함한다. 왼쪽을 포함하려면 `right=False`. 첫 경계값과 같은 값은 기본으로 NaN이 되니 `include_lowest=True`를 준다.
 
 ## 10. 자주 나오는 문제 틀
 

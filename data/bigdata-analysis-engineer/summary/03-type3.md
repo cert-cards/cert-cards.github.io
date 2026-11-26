@@ -14,7 +14,7 @@ import statsmodels.api as sm
 
 - 판정: p값 < 유의수준(보통 0.05)이면 귀무가설 기각, 아니면 채택(기각하지 못함).
 - 검정 결과는 `res.statistic`, `res.pvalue`로 꺼낸다. 소수 자리는 `round(x, 3)`.
-- 단측 검정은 `alternative='greater'` 또는 `'less'`. 방향은 첫 인자 − 둘째 인자 기준이다. 대립가설이 「A가 B보다 크다」면 `(A, B, alternative='greater')`.
+- 단측 검정은 `alternative='greater'` 또는 `'less'`. 방향은 첫 인자 − 둘째 인자 기준이다. 대립가설이 「A가 B보다 크다」면 `(A, B, alternative='greater')`. Tukey의 `meandiff`만 반대로 group2 − group1이다.
 - 표본표준편차·표본분산은 `ddof=1`. pandas `.std()`·`.var()`는 기본이 1, numpy `np.std`·`np.var`는 기본이 0.
 
 ## 1. 어떤 검정을 쓰나
@@ -118,7 +118,7 @@ res = stats.f_oneway(*groups)
 print(round(res.statistic, 3), round(res.pvalue, 4))
 
 m = smf.ols('y ~ C(g)', data=df).fit()
-tab = sm.stats.anova_lm(m)          # 칼럼: df, sum_sq, mean_sq, F, PR(>F)
+tab = sm.stats.anova_lm(m)          # typ=1 칼럼: df, sum_sq, mean_sq, F, PR(>F). typ=2에는 mean_sq가 없다
 print(tab.loc['C(g)', ['F', 'PR(>F)']].round(4).tolist())
 ```
 
@@ -137,7 +137,7 @@ print(round(tab.loc['C(A):C(B)', 'PR(>F)'], 4))     # 상호작용 행 이름
 ```python
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 t = pairwise_tukeyhsd(df['y'], df['g'], alpha=0.05)
-print(t)                                  # group1 group2 meandiff p-adj lower upper reject
+print(t)                                  # meandiff = group2 평균 − group1 평균
 print(t.meandiffs.round(3).tolist(), t.reject.tolist())   # 순서: (A,B) (A,C) (B,C)
 ```
 
@@ -177,7 +177,7 @@ b = [2.6, 2.7, 2.4, 3.0, 2.5, 2.2]
 print(stats.mannwhitneyu(a, b, alternative='greater').pvalue)   # 두 독립 집단, U는 첫 인자 기준
 before = [7, 5, 8, 6, 9, 7, 6, 8]
 after  = [6, 4, 8, 5, 7, 6, 4, 7]
-print(stats.wilcoxon(after, before).pvalue)    # 대응, 차이가 0인 쌍은 기본으로 버린다
+print(stats.wilcoxon(after, before).pvalue)    # 대응, 차이가 0인 쌍은 버린다(있으면 정규근사로 바뀌어 p가 조금 다르다)
 print(stats.kruskal([1, 3, 2, 4], [5, 6, 7, 5], [2, 3, 3, 4]).pvalue)   # 세 집단 이상
 ```
 
@@ -259,7 +259,7 @@ print(round(-2 * m.llf, 2), round(-2 * m.llnull, 2))   # 잔차 이탈도 · 영
 
 - 유의수준, 단측·양측, 등분산 가정, 연속성 보정, 절편 포함, 기준 범주를 지문에서 먼저 확인한다.
 - 단측이면 `alternative`를 넣고, 방향은 첫 인자 기준인지 다시 본다.
-- 결측치가 있으면 검정 함수가 nan을 돌려준다. 지문이 말한 처리(제거)를 먼저 한다.
+- 결측치가 있으면 scipy 검정은 nan을 돌려주지만 `smf.ols`, `pd.crosstab`, `Series.corr`는 조용히 빼고 계산한다. nan이 안 나와도 결측을 먼저 확인하고 지문이 말한 처리(제거)를 한다.
 - 범주형 칼럼이 숫자로 들어 있으면(1, 2, 3) 회귀식에서 `C()`로 감싼다.
 - 회귀 결과에서 「유의한 변수 수」는 절편을 빼고 센다.
 - 반올림 자릿수와 판정 단어(기각/채택)를 제출 형식에 맞춘다.
