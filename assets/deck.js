@@ -104,7 +104,7 @@ function mdDoc(md, idPrefix){
       const rows = [];
       while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
       const cells = rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r))
-        .map(r => r.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map(c => c.trim()));
+        .map(r => r.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|')));
       out.push('<div class="sm-tbl"><table><thead><tr>' + cells[0].map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>' +
         cells.slice(1).map(r => '<tr>' + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
       continue;
