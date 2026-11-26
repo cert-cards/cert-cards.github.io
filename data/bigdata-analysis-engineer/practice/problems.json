@@ -19,6 +19,19 @@
   {
    "id": "m5",
    "title": "모의고사 5회"
+  },
+  {
+   "id": "m6",
+   "title": "모의고사 6회"
+  },
+  {
+   "id": "m7",
+   "title": "모의고사 7회"
+  },
+  {
+   "id": "x3",
+   "title": "작업형 3 검정별 연습",
+   "exam": false
   }
  ],
  "problems": [
@@ -842,6 +855,820 @@
    ],
    "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/t3_2.csv')\ndf = df.dropna(subset=['picks_per_hour'])\n\ngroups = [g['picks_per_hour'] for _, g in df.groupby('method')]\na1, a2 = stats.f_oneway(*groups)\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
    "explain": "결측이 남아 있으면 `f_oneway`가 nan을 돌려준다. 결측 행을 먼저 지운다. 전체 평균으로 채우면 빈 자리가 모두 같은 값이 되어 집단 평균과 분산이 바뀌고 F가 달라진다.\nstatsmodels로는 `anova_lm(smf.ols('picks_per_hour ~ C(method)', data=df).fit())`의 F, PR(>F) 열이 같은 값이다.\np-value가 0.05보다 작으므로 기각한다. 적어도 한 방식의 평균 처리량이 다르다는 뜻이며, 어느 방식끼리 다른지는 사후검정(예: Tukey HSD)으로 따로 본다."
+  },
+  {
+   "id": "m6-1-1",
+   "set": "m6",
+   "type": 1,
+   "no": "1-1",
+   "points": 10,
+   "title": "점유율 0.3 이상 회차의 관객 1위 영화와 객단가 4위 상영관",
+   "statement": "제공된 데이터(t1_1.csv)는 어느 멀티플렉스 영화관의 2025년 10월 상영 기록이다. 한 행이 상영 한 회차이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| show_id | 회차 ID (상영 시작 순서대로 매김) |\n| show_date | 상영일 (YYYY-MM-DD) |\n| start_time | 상영 시작 시각 (HH:MM) |\n| screen | 상영관 번호(1~8) |\n| movie | 영화 제목 |\n| seats | 좌석 수 |\n| tickets | 판매 관람권 수(매) |\n| revenue | 관람권 매출(원) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n- 1) 회차마다 좌석 점유율 = tickets / seats 를 계산한다.\n- 2) 좌석 점유율이 0.3 이상인 회차만 남긴다.\n- 3) 남은 회차로 movie별 tickets 합계를 구한다.\n\n① tickets 합계가 가장 큰 movie를 구하시오.\n\n② ①의 movie 회차(2)에서 남긴 회차)마다 객단가 = revenue / tickets 를 계산한다. 객단가가 높은 순으로 정렬했을 때(객단가가 같으면 show_id 오름차순) 4번째 회차의 screen을 구하시오.\n\n【제출 형식】 ① 영화 제목 그대로 ② 정수(1~8)",
+   "files": [
+    "m6/t1_1.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "영화 제목 그대로",
+     "value": "푸른 등대"
+    },
+    {
+     "label": "②",
+     "format": "정수(1~8)",
+     "value": "4"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\ndf['occ'] = df['tickets'] / df['seats']\nd = df[df['occ'] >= 0.3].copy()\ntop = d.groupby('movie')['tickets'].sum().idxmax()\nprint(top)\nm = d[d['movie'] == top].copy()\nm['per'] = m['revenue'] / m['tickets']\nm = m.sort_values(['per', 'show_id'], ascending=[False, True])\nprint(m.iloc[3]['screen'])\n",
+   "explain": "점유율로 먼저 거른 뒤 영화별 합계를 낸다. 거르지 않으면 회차가 가장 많은 영화가 빈 좌석 많은 회차까지 더해 1위가 되어 ①이 바뀐다.\n\n②는 ①의 영화 회차 중 2)에서 남은 것만 쓴다. 심야 회차는 성인 관람권만 팔려 객단가가 14000원으로 같은 회차가 여럿이고 상위를 차지한다. 그래서 4번째는 동률 규칙(show_id 오름차순)으로 정해진다. sort_values에 ['per', 'show_id']와 ascending=[False, True]를 같이 준다. show_id까지 내림차순으로 두면 다른 상영관이 나온다."
+  },
+  {
+   "id": "m6-1-2",
+   "set": "m6",
+   "type": 1,
+   "no": "1-2",
+   "points": 10,
+   "title": "캠핑 장비 대여일 요일별 최고 연체율",
+   "statement": "제공된 데이터(t1_2.csv)는 어느 캠핑 장비 대여점의 2025년 4~9월 대여 기록이다. 한 행이 대여 한 건이며, 아직 반납되지 않은 대여는 return_date가 비어 있다.\n\n| 칼럼 | 설명 |\n|---|---|\n| rental_id | 대여 ID |\n| rent_date | 대여일 (YYYY-MM-DD) |\n| item | 대여 장비 |\n| booked_days | 예약한 대여 일수(일) |\n| return_date | 실제 반납일 (YYYY-MM-DD) |\n| deposit | 보증금(원) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 【제출 형식】에 맞춰 입력하시오.\n\n- 1) return_date가 비어 있는 대여는 분석에서 제외한다.\n- 2) 반납 예정일 = rent_date로부터 booked_days일 뒤의 날짜 로 둔다(예: 2025-05-02에 2일 예약하면 2025-05-04).\n- 3) return_date가 반납 예정일보다 늦은 대여를 연체로 본다.\n- 4) rent_date의 요일별로 연체율(%) = 연체 건수 / 대여 건수 × 100 을 구한다.\n\n연체율이 가장 높은 요일의 연체율(%)을 구하시오.\n\n【제출 형식】 반올림하여 소수 첫째 자리까지 (예: 12.3)",
+   "files": [
+    "m6/t1_2.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\n",
+   "answers": [
+    {
+     "label": "답",
+     "format": "반올림하여 소수 첫째 자리까지",
+     "value": "36.4"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\ndf = df.dropna(subset=['return_date']).copy()\ndf['rent_date'] = pd.to_datetime(df['rent_date'])\ndf['return_date'] = pd.to_datetime(df['return_date'])\ndf['due'] = df['rent_date'] + pd.to_timedelta(df['booked_days'], unit='D')\ndf['late'] = df['return_date'] > df['due']\nrate = df.groupby(df['rent_date'].dt.dayofweek)['late'].mean() * 100\nprint(round(rate.max(), 1))\n",
+   "explain": "날짜에 일수 칼럼을 더할 때는 pd.to_timedelta(칼럼, unit='D')로 바꿔 더한다. 반납 예정일 당일 반납이 많아서 > 대신 >= 를 쓰면 연체율이 크게 오른다.\n\n반납일이 빈 대여를 지우지 않으면 NaT와의 비교가 False가 되어 '연체 아님'으로 분모에만 들어가고 연체율이 낮아진다. 불리언의 평균이 비율이므로 groupby(요일).mean()에 100을 곱한다. 요일 이름은 묻지 않으니 dt.dayofweek 숫자로 묶어도 된다."
+  },
+  {
+   "id": "m6-1-3",
+   "set": "m6",
+   "type": 1,
+   "no": "1-3",
+   "points": 10,
+   "title": "사과 무게 백분위 경계 대체 후 평균과 품질 점수 상위 표본 수",
+   "statement": "제공된 데이터(t1_3.csv)는 어느 지역 사과 농가 6곳에서 수확 직후 뽑은 표본 사과의 품질 측정 자료이다. weight_g에 결측치가 있고, 단위를 잘못 입력한 값이 섞여 있다. 잘못 입력된 값을 따로 고치지 않고 아래 순서대로만 처리한다.\n\n| 칼럼 | 설명 |\n|---|---|\n| sample_id | 표본 ID |\n| orchard | 농가 |\n| variety | 품종 |\n| weight_g | 무게(g) |\n| brix | 당도(°Bx) |\n| firmness | 경도(kgf) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n- 1) weight_g의 결측치를 weight_g 전체의 중앙값으로 채운다. 중앙값은 결측치를 제외하고 구한다.\n- 2) 결측치를 채운 weight_g의 5번째 백분위수(P5)와 95번째 백분위수(P95)를 구한다. 백분위수는 선형 보간법으로 구한다.\n- 3) weight_g가 P5보다 작으면 P5로, P95보다 크면 P95로 바꾼다.\n\n① 3)까지 처리한 weight_g의 평균을 구하시오.\n\n② 3)까지 처리한 weight_g와 brix를 각각 표준화한다. 표준화 값 = (x − 평균) / 표준편차 이고, 표준편차는 표본표준편차(n−1로 나눔)이다. 품질 점수 = (weight_g의 표준화 값) + (brix의 표준화 값) 이 2보다 큰 표본의 수를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 둘째 자리까지 ② 정수(표본 수)",
+   "files": [
+    "m6/t1_3.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 둘째 자리까지",
+     "value": "285.70"
+    },
+    {
+     "label": "②",
+     "format": "정수(표본 수)",
+     "value": "82"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\ndf['weight_g'] = df['weight_g'].fillna(df['weight_g'].median())\np5 = df['weight_g'].quantile(0.05)\np95 = df['weight_g'].quantile(0.95)\ndf['weight_g'] = df['weight_g'].clip(p5, p95)\nprint(round(df['weight_g'].mean(), 2))\nzw = (df['weight_g'] - df['weight_g'].mean()) / df['weight_g'].std()\nzb = (df['brix'] - df['brix'].mean()) / df['brix'].std()\nprint(((zw + zb) > 2).sum())\n",
+   "explain": "이상치를 지우지 않고 경계값으로 바꾸는 방식(윈저화)이다. Series.clip(하한, 상한)이 그대로 해 준다. 백분위수는 결측을 채운 뒤의 값으로 잡는다. 순서를 바꿔 결측이 있는 채로 백분위수를 구하면 경계가 달라져 ①의 둘째 자리가 바뀐다.\n\n②의 표준화는 3)까지 처리한 무게로 한다. 경계값으로 바꾸기 전 무게를 쓰면 2900g대 입력 오류가 평균과 표준편차를 끌어당겨 개수가 달라진다. StandardScaler는 ddof=0이라 지문(표본표준편차)과 다르니 pandas의 std()로 직접 계산한다."
+  },
+  {
+   "id": "m6-2",
+   "set": "m6",
+   "type": 2,
+   "no": "2",
+   "points": 40,
+   "title": "미용실 예약 노쇼 예측 (ROC-AUC)",
+   "statement": "다음은 한 미용실 체인의 예약 기록이다. 학습용 데이터(train.csv)를 이용하여 예약 고객이 예약 시간에 오지 않는지(노쇼) 여부(result)를 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 예약이 노쇼일 확률을 예측하여 제출하시오.\n\n- 학습용 데이터: 3,000행, 16개 칼럼 (result 포함)\n- 평가용 데이터: 1,000행, 15개 칼럼 (result 없음)\n\n| 칼럼 | 설명 |\n|---|---|\n| booking_id | 예약 번호 |\n| branch | 지점 (성수, 합정, 판교, 광교, 송파) |\n| service | 예약 시술 (커트, 펌, 염색, 클리닉) |\n| channel | 예약 경로 (앱, 전화, 포털, 방문) |\n| lead_days | 예약한 날부터 예약일까지 일수 |\n| slot | 예약 시간대 (오전, 오후, 저녁) |\n| weekend | 예약일이 주말인지 여부 (Y, N) |\n| age | 고객 나이 |\n| first_visit | 첫 방문 고객 여부 (Y, N) |\n| past_visits | 지난 1년 방문 횟수 |\n| past_noshow | 지난 1년 노쇼 횟수 |\n| deposit | 예약금 결제 여부 (Y, N) |\n| reminder | 전날 알림 확인 여부 (Y, N) |\n| price | 시술 예정 금액(천원) |\n| rain | 예약일 비 예보 여부 (Y, N) |\n| result | 예약 결과 (노쇼, 방문) |\n\n【유의 사항】\n\n- 성능 평가 지표는 ROC-AUC이며, 값이 높을수록 좋다.\n\n【제출 형식】\n\n- 파일명: result.csv\n- 칼럼: pred 1개 (index 없이 저장)\n- 행 수: 1000행 (test.csv와 같은 행 순서)\n- pred에는 노쇼(result = 노쇼)일 확률을 넣는다",
+   "files": [
+    "m6/train.csv",
+    "m6/test.csv"
+   ],
+   "starter": "import pandas as pd\ntrain = pd.read_csv('data/train.csv')\ntest = pd.read_csv('data/test.csv')\n",
+   "submit": {
+    "file": "result.csv",
+    "column": "pred",
+    "rows": 1000
+   },
+   "metric": "roc_auc",
+   "truth": "m6/t2_truth.csv",
+   "reference": {
+    "baseline": 0.2814,
+    "solution": 0.7393
+   },
+   "solution": "import pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import roc_auc_score\n\ntrain = pd.read_csv('data/train.csv')\ntest = pd.read_csv('data/test.csv')\n\n# 1) 타깃 확인 -> 0/1이 아니라 문자 '노쇼', '방문'\nprint(train['result'].value_counts())\n\n# 2) 구할 확률이 노쇼이므로 노쇼를 1, 방문을 0으로 바꿔 둔다\ny = (train['result'] == '노쇼').astype(int)\n\n# 3) 범주형 원-핫 인코딩 (train과 test를 합쳐서)\nX_all = pd.concat([train.drop(columns=['booking_id', 'result']),\n                   test.drop(columns=['booking_id'])])\nX_all = pd.get_dummies(X_all, columns=['branch', 'service', 'channel', 'slot', 'weekend',\n                                       'first_visit', 'deposit', 'reminder', 'rain'])\nX = X_all.iloc[:len(train)]\nX_test = X_all.iloc[len(train):]\n\n# 4) 검증 (확률로 AUC 계산)\nX_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, stratify=y, random_state=0)\nmodel = RandomForestClassifier(n_estimators=300, min_samples_leaf=10, random_state=0)\nmodel.fit(X_tr, y_tr)\nprint('검증 AUC:', roc_auc_score(y_val, model.predict_proba(X_val)[:, 1]))\n\n# 5) 전체 train으로 다시 학습, 노쇼(1) 확률을 제출\nmodel.fit(X, y)\nprint(model.classes_)                     # [0 1] -> 두 번째 열이 노쇼(1) 확률\npred = model.predict_proba(X_test)[:, 1]\npd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)\nprint(pd.read_csv('result.csv').shape)\n",
+   "explain": "result는 0/1이 아니라 문자 노쇼, 방문이다. 문자 타깃을 그대로 학습하면 `model.classes_`가 가나다순으로 `['노쇼', '방문']`이 되어, 습관대로 `predict_proba(X_test)[:, 1]`을 내면 노쇼가 아니라 방문할 확률을 내게 된다. 순위가 정반대라 ROC-AUC가 0.5보다 낮은 0.281이 나온다.\n같은 모형에서 노쇼 열(`[:, 0]`)을 내면 0.719이다. 헷갈리지 않으려면 `y = (train['result'] == '노쇼').astype(int)`로 구할 쪽을 1로 바꾸고 `classes_`가 `[0 1]`인지 확인한 뒤 `[:, 1]`을 낸다.\n`min_samples_leaf=10`으로 잎을 키우면 확률이 덜 들쭉날쭉해져 0.739까지 오른다. AUC는 순위를 보는 지표라 `predict`의 0/1이 아니라 확률을 낸다."
+  },
+  {
+   "id": "m6-3-1",
+   "set": "m6",
+   "type": 3,
+   "no": "3-1",
+   "points": 15,
+   "title": "신간 도서 판매량 회귀 — 교호작용항 계수, p-value, 예측",
+   "statement": "어느 출판사가 최근 2년 동안 낸 신간 180종의 출간 후 3개월 판매 부수와 도서 정보를 정리했다. 데이터 `t3_1.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| book_id | 도서 ID |\n| ad_budget | 출간 후 3개월 광고비(백만 원) |\n| series | 시리즈 후속권 여부 (1 후속권, 0 단권) |\n| price | 정가(원) |\n| pages | 쪽수 |\n| copies | 출간 후 3개월 판매 부수 |\n\ncopies를 종속변수로 하는 다중선형회귀 모형을 전체 데이터로 적합하시오. 독립변수는 ad_budget, series, price, pages와 교호작용항 ad_budget × series(두 변수의 곱) 5개 항이다.\n\n- 모형은 절편항을 포함한다. 독립변수는 위 교호작용항 외에는 변환하지 않고 원래 값 그대로 쓴다.\n- 각 회귀계수의 유의성은 양측 t-검정으로 판단하며, 유의수준은 0.05이다.\n\n① 교호작용항 ad_budget × series의 회귀계수를 구하시오.\n\n② pages 회귀계수의 p-value를 구하시오.\n\n③ ad_budget이 24.0, series가 1, price가 16800, pages가 320인 도서의 판매 부수 예측값을 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 둘째 자리까지",
+   "files": [
+    "m6/t3_1.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t3_1.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "84.449"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0990"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 둘째 자리까지",
+     "value": "4822.82"
+    }
+   ],
+   "solution": "import pandas as pd\nimport statsmodels.formula.api as smf\n\ndf = pd.read_csv('data/t3_1.csv')\nmodel = smf.ols('copies ~ ad_budget + series + ad_budget:series + price + pages', data=df).fit()\n# 'copies ~ ad_budget * series + price + pages' 로 써도 같은 모형이다\n\na1 = model.params['ad_budget:series']\na2 = model.pvalues['pages']\n\nnew = pd.DataFrame({'ad_budget': [24.0], 'series': [1], 'price': [16800], 'pages': [320]})\na3 = model.predict(new).iloc[0]\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(round(a3, 2))",
+   "explain": "formula에서 `a:b`는 곱 항 하나만, `a*b`는 `a + b + a:b`를 뜻한다. 주효과(ad_budget, series)를 빼고 `a:b`만 넣으면 다른 모형이 된다. 계수 이름은 `model.params.index`로 확인한다(`ad_budget:series`).\n교호작용이 있으면 광고비 1백만 원의 효과가 단권은 ad_budget 계수, 후속권은 ad_budget 계수 + 교호작용 계수로 갈린다.\n③은 새 행을 원래 칼럼 이름으로 만들어 `predict`에 넣으면 formula가 곱 항까지 계산해 준다. 교호작용항을 빼고 적합한 모형으로 예측하면 값이 크게 달라진다.\n곱 칼럼을 직접 만들어(`df['ad_x_series'] = df['ad_budget'] * df['series']`) 넣어도 계수는 같지만, 그때는 새 행에도 같은 칼럼을 만들어야 한다."
+  },
+  {
+   "id": "m6-3-2",
+   "set": "m6",
+   "type": 3,
+   "no": "3-2",
+   "points": 15,
+   "title": "두 레미콘 업체 압축강도 — 평균 중심 등분산 검정과 이분산 독립표본 t검정",
+   "statement": "어느 건설사가 두 레미콘 업체(A, B)에서 납품받은 콘크리트로 공시체를 만들어 28일 압축강도를 시험했다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| specimen_id | 공시체 ID |\n| vendor | 레미콘 업체 (A 또는 B) |\n| strength | 28일 압축강도(MPa) |\n| slump_mm | 슬럼프(mm) |\n\n두 업체의 strength는 각각 정규분포를 따르고 서로 독립이라고 가정한다. 유의수준은 0.05이다.\n\n① 각 공시체의 strength에서 그 공시체가 속한 업체의 strength 표본평균을 뺀 값의 절댓값을 z라 하자. z를 반응값으로 하여 두 업체의 z 모평균이 같은지 일원분산분석을 할 때의 F 통계량(두 업체의 모분산이 같은지 보는 등분산 검정 통계량)을 구하시오.\n\n② 두 업체의 모분산이 같다고 가정하지 않고, 두 업체의 strength 모평균이 같다는 귀무가설을 독립표본 t-검정으로 검정할 때의 검정통계량 t를 구하시오. t는 (A의 표본평균 − B의 표본평균)을 분자로 한다.\n\n③ ②의 검정에서 대립가설이 \"두 모평균이 다르다\"일 때(양측 검정) p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "m6/t3_2.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t3_2.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "21.457"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "1.761"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0852"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/t3_2.csv')\na = df.loc[df['vendor'] == 'A', 'strength']\nb = df.loc[df['vendor'] == 'B', 'strength']\n\na1 = stats.levene(a, b, center='mean').statistic\n# 정의대로: z = |x - 집단 평균| 에 일원분산분석\n# df['z'] = (df['strength'] - df.groupby('vendor')['strength'].transform('mean')).abs()\n# stats.f_oneway(*[g['z'] for _, g in df.groupby('vendor')]).statistic 과 같다\n\nres = stats.ttest_ind(a, b, equal_var=False)\na2 = res.statistic\na3 = res.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "①은 Levene 검정의 원래 정의(집단 평균 중심)다. `stats.levene`의 기본값은 `center='median'`(Brown-Forsythe 변형)이라 그대로 쓰면 값이 달라진다. `center='mean'`을 주거나, 정의대로 z를 만들어 `f_oneway`에 넣는다.\n①의 p-value가 0.05보다 작아 등분산 가정이 맞지 않으므로 ②③은 Welch t-검정이다. `ttest_ind`의 기본값은 `equal_var=True`(합동분산)이고, 이 데이터에서 그대로 쓰면 p-value가 0.05보다 작아져 결론이 뒤집힌다.\nWelch t = (x̄A − x̄B) / sqrt(sA²/nA + sB²/nB)이고 자유도는 Welch–Satterthwaite 근사(정수가 아니다)를 쓴다. 분산이 큰 쪽(A)의 표본이 작을수록 합동분산이 A의 분산을 과소평가해 두 방법의 차이가 커진다."
+  },
+  {
+   "id": "m7-1-1",
+   "set": "m7",
+   "type": 1,
+   "no": "1-1",
+   "points": 10,
+   "title": "주행 많은 지점 대여의 일 요금 10위 주행거리",
+   "statement": "제공된 데이터(t1_1.csv)는 어느 렌터카 회사 7개 지점의 대여 기록이다. 한 행이 대여 한 건이다.\n\n| 칼럼 | 설명 |\n|---|---|\n| rental_id | 대여 ID |\n| branch | 대여 지점 |\n| car_class | 차급 |\n| days | 대여 일수(일) |\n| km_out | 출고 시 누적 주행거리 계기값(km) |\n| km_in | 반납 시 누적 주행거리 계기값(km) |\n| fee | 대여 요금(원) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 【제출 형식】에 맞춰 입력하시오.\n\n- 1) 대여마다 주행거리 = km_in − km_out, 일평균 주행거리 = 주행거리 / days 를 계산한다.\n- 2) branch별 일평균 주행거리의 평균을 구한다. 이 값이 전체 대여(1,120건)의 일평균 주행거리 평균보다 큰 branch의 대여만 남긴다.\n- 3) 남은 대여마다 일 요금 = fee / days 를 계산하고, 일 요금이 높은 순으로 정렬한다. 일 요금이 같으면 rental_id 오름차순으로 둔다.\n\n정렬 결과 10번째 대여의 주행거리(km)를 구하시오.\n\n【제출 형식】 정수(km)",
+   "files": [
+    "m7/t1_1.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\n",
+   "answers": [
+    {
+     "label": "답",
+     "format": "정수(km)",
+     "value": "256"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_1.csv')\ndf['dist'] = df['km_in'] - df['km_out']\ndf['dpd'] = df['dist'] / df['days']\nbm = df.groupby('branch')['dpd'].mean()\nkeep = bm[bm > df['dpd'].mean()].index\nd = df[df['branch'].isin(keep)].copy()\nd['daily'] = d['fee'] / d['days']\nd = d.sort_values(['daily', 'rental_id'], ascending=[False, True])\nprint(d.iloc[9]['dist'])\n",
+   "explain": "km_in과 km_out은 계기판 누적값이라 그대로 쓰면 안 되고 빼서 주행거리를 만든다. 지점 선택 기준은 행 전체의 평균(df['dpd'].mean())이다. groupby 결과에서 bm[bm > 기준].index로 지점 이름을 얻고 isin으로 대여를 거른다.\n\n요금표가 차급별 일 단가라 할인·쿠폰이 없는 대형차 대여는 일 요금이 모두 95000원으로 같고, 이들이 상위를 채운다. 그래서 10번째는 rental_id 오름차순 규칙으로 정해진다. rental_id까지 내림차순으로 정렬하면 다른 대여가 나온다. fee 그대로(총 요금) 정렬해도 순서가 완전히 달라진다."
+  },
+  {
+   "id": "m7-1-2",
+   "set": "m7",
+   "type": 1,
+   "no": "1-2",
+   "points": 10,
+   "title": "베이커리 앱 주문 평균 수량과 최다 판매 메뉴",
+   "statement": "제공된 데이터(t1_2.csv)는 어느 베이커리의 주문 기록이다. 한 행이 주문 한 건이다. items는 '메뉴*수량' 형식의 항목을 '/'로 이어 쓴 문자열이며(예: 소금빵*2/식빵*1), 일부 주문은 '/' 앞뒤에 공백이 있다.\n\n| 칼럼 | 설명 |\n|---|---|\n| order_id | 주문 ID |\n| channel | 주문 경로(매장/앱/배달) |\n| items | 주문 메뉴와 수량 |\n| paid | 결제 금액(원) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n- 1) items를 항목 단위로 나누고, 항목마다 메뉴 이름과 수량을 구한다. 항목 앞뒤의 공백은 무시한다.\n- 2) 주문마다 총 수량 = 그 주문 항목들의 수량 합 을 구한다(예: 소금빵*2/식빵*1 이면 3).\n\n① channel이 앱인 주문의 총 수량 평균을 구하시오.\n\n② 전체 주문에서 메뉴별 수량 합계를 구했을 때 합계가 가장 큰 메뉴 이름을 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 메뉴 이름 그대로 (예: 식빵)",
+   "files": [
+    "m7/t1_2.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "3.273"
+    },
+    {
+     "label": "②",
+     "format": "메뉴 이름 그대로",
+     "value": "소금빵"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_2.csv')\nrows = df.assign(item=df['items'].str.split('/')).explode('item')\nrows['item'] = rows['item'].str.strip()\nrows['menu'] = rows['item'].str.split('*').str[0]\nrows['qty'] = rows['item'].str.split('*').str[1].astype(int)\ntot = rows.groupby('order_id')['qty'].sum()\napp = df.loc[df['channel'] == '앱', 'order_id']\nprint(round(tot[app].mean(), 3))\nprint(rows.groupby('menu')['qty'].sum().idxmax())\n",
+   "explain": "str.split('/')로 리스트를 만든 뒤 explode로 항목 하나를 한 행으로 펼치면 groupby로 합치기 쉽다. 주문마다 sum(int(x.split('*')[1]) for x in s.split('/'))를 apply로 계산해도 된다.\n\n공백을 strip하지 않으면 ' 크루아상'처럼 앞에 공백이 붙은 이름이 따로 묶여 메뉴별 합계가 쪼개지고 ②의 1위가 바뀐다. ②는 수량 합계다. 메뉴가 등장한 주문 수(value_counts)로 세면 1개씩 자주 사는 메뉴가 1위가 되어 답이 다르다. ①은 항목 수(메뉴 종류 수)가 아니라 수량 합의 평균이다."
+  },
+  {
+   "id": "m7-1-3",
+   "set": "m7",
+   "type": 1,
+   "no": "1-3",
+   "points": 10,
+   "title": "주유소별 결측 앞값 채우기 후 평균 최댓값과 로버스트 이상치 수",
+   "statement": "제공된 데이터(t1_3.csv)는 어느 시의 주유소 8곳의 2025년 6월 1일부터 120일간 일별 판매 가격 기록이다. gasoline에 결측치가 있다. 각 주유소의 첫 날(2025-06-01) gasoline 값은 결측이 아니다.\n\n| 칼럼 | 설명 |\n|---|---|\n| date | 날짜 (YYYY-MM-DD) |\n| station | 주유소 |\n| gasoline | 휘발유 판매가(원/L) |\n| diesel | 경유 판매가(원/L) |\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n- 1) gasoline의 결측치를 같은 station의 바로 앞 날짜 gasoline 값으로 채운다. 바로 앞 날짜도 결측이면 그보다 앞선 날짜 중 가장 가까운 날짜의 값으로 채운다.\n- 2) 1)까지 처리한 데이터로 station별 gasoline 평균을 구한다.\n\n① station별 gasoline 평균 가운데 가장 큰 값을 구하시오.\n\n② 1)까지 처리한 데이터에서 station마다 gasoline의 중앙값, 1사분위수(Q1), 3사분위수(Q3)를 구하고(분위수는 선형 보간법), 변환값 = (gasoline − 그 station의 중앙값) / (그 station의 Q3 − Q1) 을 계산한다. 변환값의 절댓값이 1.5보다 큰 행의 수를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 첫째 자리까지 ② 정수(행 수)",
+   "files": [
+    "m7/t1_3.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 첫째 자리까지",
+     "value": "1727.6"
+    },
+    {
+     "label": "②",
+     "format": "정수(행 수)",
+     "value": "61"
+    }
+   ],
+   "solution": "import pandas as pd\ndf = pd.read_csv('data/t1_3.csv')\ndf = df.sort_values(['station', 'date'])\ndf['gasoline'] = df.groupby('station')['gasoline'].ffill()\nprint(round(df.groupby('station')['gasoline'].mean().max(), 1))\ng = df.groupby('station')['gasoline']\nmed = g.transform('median')\niqr = g.transform(lambda x: x.quantile(0.75)) - g.transform(lambda x: x.quantile(0.25))\nr = (df['gasoline'] - med) / iqr\nprint((r.abs() > 1.5).sum())\n",
+   "explain": "'바로 앞 날짜 값으로 채우기'는 ffill이다. 행이 섞여 있으니 먼저 station과 date로 정렬하고(ISO 날짜 문자열은 문자열 정렬이 곧 날짜 정렬이다), groupby('station')['gasoline'].ffill()로 주유소 안에서만 채운다. 정렬하지 않으면 엉뚱한 날짜 값이 들어가고, 날짜로만 정렬해 전체에 ffill하면 같은 날 다른 주유소의 가격이 들어와 ①이 달라진다.\n\n②는 중앙값과 IQR로 나누는 로버스트 스케일링이다. transform으로 주유소별 값을 행 자리에 놓고 계산한다. 주유소를 가리지 않고 전체 중앙값·IQR로 변환하면 가격 수준이 다른 주유소가 통째로 바깥으로 밀려 개수가 크게 달라진다."
+  },
+  {
+   "id": "m7-2",
+   "set": "m7",
+   "type": 2,
+   "no": "2",
+   "points": 40,
+   "title": "도서관 분관 일 대출 권수 예측 (RMSE)",
+   "statement": "다음은 한 시립도서관 분관들의 일별 대출 기록이다. 학습용 데이터(train.csv)를 이용하여 하루 대출 권수(loans)를 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 loans를 예측하여 제출하시오.\n\n- 학습용 데이터: 2,355행, 9개 칼럼 (loans 포함)\n- 평가용 데이터: 775행, 8개 칼럼 (loans 없음)\n\n| 칼럼 | 설명 |\n|---|---|\n| date | 날짜 (YYYY-MM-DD). 월요일은 휴관이라 기록이 없음 |\n| branch | 분관 (중앙, 해오름, 별빛, 솔숲, 물빛) |\n| holiday | 공휴일 여부 (Y, N) |\n| temp | 일 평균기온(℃) |\n| rain_mm | 일 강수량(mm) |\n| event | 문화행사 개최 여부 (1: 개최, 0: 없음) |\n| new_books | 최근 1주 신착 도서 수(권) |\n| seats | 열람석 수 |\n| loans | 하루 대출 권수(권) |\n\n【유의 사항】\n\n- 성능 평가 지표는 RMSE(Root Mean Squared Error)이며, 값이 낮을수록 좋다.\n\n【제출 형식】\n\n- 파일명: result.csv\n- 칼럼: pred 1개 (index 없이 저장)\n- 행 수: 775행 (test.csv와 같은 행 순서)\n- pred에는 예측한 하루 대출 권수를 넣는다 (정수가 아니어도 된다)",
+   "files": [
+    "m7/train.csv",
+    "m7/test.csv"
+   ],
+   "starter": "import pandas as pd\ntrain = pd.read_csv('data/train.csv')\ntest = pd.read_csv('data/test.csv')\n",
+   "submit": {
+    "file": "result.csv",
+    "column": "pred",
+    "rows": 775
+   },
+   "metric": "rmse",
+   "truth": "m7/t2_truth.csv",
+   "reference": {
+    "baseline": 171.3121,
+    "solution": 62.9251
+   },
+   "solution": "import pandas as pd\nimport numpy as np\nfrom sklearn.ensemble import RandomForestRegressor\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_squared_error\n\ntrain = pd.read_csv('data/train.csv')\ntest = pd.read_csv('data/test.csv')\n\n# 1) 날짜 범위 확인 -> 평가용 기간이 학습용 기간 뒤에 이어진다\nprint(train['date'].min(), train['date'].max())\nprint(test['date'].min(), test['date'].max())\n\n# 2) date는 문자열이라 그대로 쓰면 test 날짜가 train에 없다 -> 월과 요일을 뽑고 date는 뺀다\nfor df in (train, test):\n    d = pd.to_datetime(df['date'])\n    df['month'] = d.dt.month\n    df['dow'] = d.dt.dayofweek            # 0=월 ... 6=일\nprint(train.groupby('dow')['loans'].mean())\n\n# 3) 범주형 원-핫 인코딩 (train과 test를 합쳐서)\ny = train['loans']\nX_all = pd.concat([train.drop(columns=['date', 'loans']), test.drop(columns=['date'])])\nX_all = pd.get_dummies(X_all, columns=['branch', 'holiday'])\nX = X_all.iloc[:len(train)]\nX_test = X_all.iloc[len(train):]\n\n# 4) 검증\nX_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, random_state=0)\nmodel = RandomForestRegressor(n_estimators=300, random_state=0)\nmodel.fit(X_tr, y_tr)\nprint('검증 RMSE:', np.sqrt(mean_squared_error(y_val, model.predict(X_val))))\n\n# 5) 전체 train으로 다시 학습해 예측\nmodel.fit(X, y)\npred = model.predict(X_test)\npd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)\nprint(pd.read_csv('result.csv').shape)\n",
+   "explain": "date는 문자열이고 평가용 기간(2025년 9월~2026년 2월)이 학습용 기간(2024년 3월~2025년 8월) 바로 뒤에 이어진다. 그대로 `pd.get_dummies`하면 날짜 하나하나가 칼럼이 되는데 test의 날짜는 train에 한 번도 없으므로 그 칼럼들은 학습에 쓰이지 않는다. 그래서 RMSE가 171.3이고, date를 아예 빼고 학습한 165.9보다도 나쁘다.\n대출 권수는 요일(토·일이 평일보다 1.5배 이상)과 월(방학인 1·2·7·8월이 많다)에 따라 크게 움직인다. `pd.to_datetime`으로 바꾼 뒤 `.dt.month`, `.dt.dayofweek`를 뽑아 넣으면 RMSE가 62.9로 크게 내려간다.\n연도(`.dt.year`)는 넣지 않는다. test에는 2026년처럼 train에 없거나 적은 연도가 있고, 트리 모형은 본 적 없는 연도의 추세를 이어 그리지 못한다."
+  },
+  {
+   "id": "m7-3-1",
+   "set": "m7",
+   "type": 3,
+   "no": "3-1",
+   "points": 15,
+   "title": "밀키트 체험 고객 정기구독 전환 로지스틱 회귀 — k단위 오즈비, p-value, 임계값 분류",
+   "statement": "밀키트 구독 서비스가 2주 무료 체험을 마친 고객 300명의 체험 기간 기록과 정기구독 전환 여부를 정리했다. 데이터 `t3_1.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| customer_id | 고객 ID |\n| trial_orders | 체험 기간 주문 횟수 |\n| delay_min | 체험 기간 평균 배송 지연(분) |\n| rating | 체험 기간 평균 메뉴 평점(1~5) |\n| coupon | 전환 할인 쿠폰 수령 여부 (1 수령, 0 미수령) |\n| household | 가구원 수(명) |\n| subscribed | 정기구독 전환 여부 (1 전환, 0 미전환) |\n\nsubscribed를 종속변수로, trial_orders, delay_min, rating, coupon, household 5개를 독립변수로 하는 로지스틱 회귀 모형을 전체 데이터로 적합하시오.\n\n- 모형은 절편항을 포함하며, 규제(벌점항) 없이 최대우도법으로 추정한다.\n- 각 회귀계수의 유의성은 양측 Wald 검정(z-검정)으로 판단하며, 유의수준은 0.05이다.\n\n① 다른 변수가 같을 때, delay_min이 10분 늘면 전환 오즈가 몇 배가 되는지 구하시오.\n\n② household 회귀계수의 p-value를 구하시오.\n\n③ 적합한 모형으로 300명 전원의 전환 예측확률을 구하고, 예측확률이 0.4 이상이면 1(전환), 0.4 미만이면 0(미전환)으로 분류한다. 실제로는 전환하지 않았는데(subscribed=0) 1로 분류된 고객 수를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 정수",
+   "files": [
+    "m7/t3_1.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t3_1.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "0.731"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0340"
+    },
+    {
+     "label": "③",
+     "format": "정수",
+     "value": "61"
+    }
+   ],
+   "solution": "import numpy as np\nimport pandas as pd\nimport statsmodels.formula.api as smf\n\ndf = pd.read_csv('data/t3_1.csv')\nmodel = smf.logit('subscribed ~ trial_orders + delay_min + rating + coupon + household', data=df).fit(disp=0)\n\na1 = np.exp(model.params['delay_min'] * 10)\na2 = model.pvalues['household']\n\nprob = model.predict(df)\npred = (prob >= 0.4).astype(int)\na3 = int(((pred == 1) & (df['subscribed'] == 0)).sum())\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "k단위 오즈비는 exp(β×k)다. exp(β)×k로 계산하면 틀린다(exp(β)를 k제곱한 값은 exp(β×k)와 같다). delay_min 계수가 음수라 ①은 1보다 작다. 지연이 10분 늘면 전환 오즈가 그만큼 줄어든다는 뜻이다.\nstatsmodels logit의 p-value(`model.pvalues`)는 z 분포 기준 양측 Wald 검정이다. sklearn `LogisticRegression`은 기본으로 L2 규제가 걸리고 p-value를 주지 않으므로 이 문제에는 맞지 않다.\n③은 거짓양성(FP) 개수다. 기준을 습관처럼 0.5로 두면 값이 달라진다. `pd.crosstab(df['subscribed'], pred)`로 혼동행렬을 보면 실제 0 행, 예측 1 열의 칸이다."
+  },
+  {
+   "id": "m7-3-2",
+   "set": "m7",
+   "type": 3,
+   "no": "3-2",
+   "points": 15,
+   "title": "단과대학과 통학 수단 — 3×4 카이제곱 독립성 검정, 기대빈도",
+   "statement": "어느 대학교가 학부생 276명에게 주로 이용하는 통학 수단을 설문했다. 한 행이 응답자 한 명이다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| student_id | 학번 |\n| college | 소속 단과대학 (공학, 인문, 자연) |\n| grade | 학년 |\n| commute | 주 통학 수단 (도보, 버스, 지하철, 자가용, 기타) |\n| minutes | 편도 통학 시간(분) |\n\ncommute가 기타인 응답을 제외하고, college와 commute로 3×4 분할표를 만들어 두 변수가 서로 독립이라는 귀무가설을 카이제곱 독립성 검정으로 검정하시오.\n\n- 카이제곱 검정은 오른쪽 꼬리(상측) 검정이며, 유의수준은 0.05이다.\n\n① 귀무가설이 참일 때 college가 공학이고 commute가 지하철인 칸의 기대빈도를 구하시오.\n\n② 검정통계량을 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "m7/t3_2.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/t3_2.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "33.153"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "13.639"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0339"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy.stats import chi2_contingency\n\ndf = pd.read_csv('data/t3_2.csv')\ndf = df[df['commute'] != '기타']\ntable = pd.crosstab(df['college'], df['commute'])\n\nchi2, p, dof, expected = chi2_contingency(table)\nexpected = pd.DataFrame(expected, index=table.index, columns=table.columns)\n\na1 = expected.loc['공학', '지하철']\na2 = chi2\na3 = p\n\nprint(round(a1, 3))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "기타 응답을 먼저 지워야 표가 3×4가 된다. 지우지 않으면 3×5 표가 되어 자유도(6 → 8), 통계량, p-value가 모두 달라지고 이 데이터에서는 p-value가 0.05를 넘는다.\n기대빈도 = (행 합계 × 열 합계) / 전체 합계다. `chi2_contingency`가 돌려주는 기대빈도는 numpy 배열이라 행·열 순서가 crosstab의 가나다순(공학, 인문, 자연 / 도보, 버스, 자가용, 지하철)을 따른다. 지문의 칼럼 순서대로 위치를 짚으면 엉뚱한 칸을 읽으므로 index·columns를 붙여 이름으로 찾는다.\n자유도가 1보다 크면 Yates 보정은 적용되지 않으므로 `correction` 인자는 결과에 영향이 없다. 모든 기대빈도가 5 이상이라 카이제곱 근사를 써도 된다."
+  },
+  {
+   "id": "x3-01",
+   "set": "x3",
+   "type": 3,
+   "no": "01",
+   "points": 15,
+   "title": "단일표본 t검정 — 생수 용량",
+   "statement": "어느 생수 공장은 두 충전 라인(A, B)에서 표시 용량 500 mL 생수를 생산한다. 품질관리팀이 두 라인에서 생산된 생수를 무작위로 뽑아 실제 용량을 측정했다. 데이터 `x3_01.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| bottle_id | 병 ID |\n| line | 충전 라인 (A, B) |\n| volume_ml | 측정 용량(mL) |\n\n라인 B에서 생산된 생수의 평균 용량이 표시 용량 500 mL와 같은지 단일표본 t검정으로 검정하시오. 라인 B의 용량은 정규분포를 따른다고 가정한다.\n\n- 귀무가설: μ = 500, 대립가설: μ ≠ 500 (양측 검정)\n- 유의수준은 0.05이다.\n\n① 라인 B 용량의 표본표준편차(n−1로 나눔)를 구하시오.\n\n② 검정통계량 t를 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_01.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_01.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "3.696"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "2.458"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0166"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_01.csv')\nb = df.loc[df['line'] == 'B', 'volume_ml']\n\nres = stats.ttest_1samp(b, 500)\na1 = b.std(ddof=1)\na2 = res.statistic\na3 = res.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "라인 B만 남긴 뒤 검정한다. 두 라인을 섞어 검정하면 표본 수와 평균이 달라져 p-value가 바뀐다.\npandas `.std()`는 기본이 ddof=1이지만 `np.std`는 ddof=0이라 ①이 달라진다.\nt = (표본평균 − 500) / (s / √n), 자유도 n−1의 양측 p-value가 `ttest_1samp`의 기본값이다."
+  },
+  {
+   "id": "x3-02",
+   "set": "x3",
+   "type": 3,
+   "no": "02",
+   "points": 15,
+   "title": "단측 단일표본 t검정과 신뢰구간 — 전동킥보드 주행거리",
+   "statement": "어느 공유 전동킥보드 업체는 새로 들인 기종이 1회 충전으로 평균 40 km를 달린다고 안내하고 있다. 소비자단체가 이 기종 72대를 완전히 충전한 뒤 배터리가 다 닳을 때까지의 주행거리를 측정했다. 데이터 `x3_02.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| scooter_id | 킥보드 ID |\n| temp_c | 측정 당일 평균 기온(℃) |\n| range_m | 1회 충전 주행거리(m) |\n\n이 기종의 평균 주행거리가 안내보다 짧은지 단일표본 t검정으로 검정하시오. 주행거리는 정규분포를 따른다고 가정하며, 모든 답은 km 단위로 구한다.\n\n- 귀무가설: μ = 40 km, 대립가설: μ < 40 km (단측 검정)\n- 유의수준은 0.05이다.\n\n① 검정통계량 t를 구하시오.\n\n② 단측 검정의 p-value를 구하시오.\n\n③ 표본표준편차(n−1로 나눔)와 t분포를 이용하여 μ의 단측 95% 신뢰구간 (−∞, U]의 상한 U를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 셋째 자리까지",
+   "files": [
+    "x3/x3_02.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_02.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "-1.739"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0432"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "39.972"
+    }
+   ],
+   "solution": "import numpy as np\nimport pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_02.csv')\nx = df['range_m'] / 1000\nn = len(x)\n\nres = stats.ttest_1samp(x, 40, alternative='less')\na1 = res.statistic\na2 = res.pvalue\na3 = x.mean() + stats.t.ppf(0.95, n - 1) * x.std(ddof=1) / np.sqrt(n)\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(round(a3, 3))",
+   "explain": "주행거리가 m 단위라 1000으로 나눠 km로 바꾼 뒤 40과 비교한다. 바꾸지 않으면 t가 엉뚱하게 커진다.\n대립가설이 μ < 40이므로 `alternative='less'`다. 기본값(양측)으로 두면 p-value가 두 배가 되어 0.05를 넘고 판정이 채택으로 뒤집힌다.\n구하는 구간이 [L, ∞)가 아니라 (−∞, U]이므로 U = 표본평균 + t(0.95, n−1) × s/√n이다. 0.975 분위수를 쓰면 양측 구간의 상한이 된다. U가 40보다 작다는 것과 단측 p < 0.05가 같은 결론이다."
+  },
+  {
+   "id": "x3-03",
+   "set": "x3",
+   "type": 3,
+   "no": "03",
+   "points": 15,
+   "title": "독립표본 t검정(등분산 가정) — 식빵 레시피 부피",
+   "statement": "어느 제과점이 식빵 반죽 레시피 세 가지(기존, 저당, 고단백)로 식빵을 구워 한 덩이씩 부피를 쟀다. 데이터 `x3_03.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| loaf_id | 식빵 ID |\n| recipe | 레시피 (기존, 저당, 고단백) |\n| volume_cc | 구운 뒤 부피(cm³) |\n| oven_no | 사용한 오븐 번호 |\n\n기존 레시피와 저당 레시피로 구운 식빵의 평균 부피가 같은지 독립표본 t검정으로 검정하시오. 두 레시피의 부피는 각각 정규분포를 따르고 서로 독립이며, 두 모분산은 같다고 가정한다.\n\n- 귀무가설: μ기존 = μ저당, 대립가설: μ기존 ≠ μ저당 (양측 검정)\n- 유의수준은 0.05이다.\n\n① 두 레시피 표본평균의 차(기존 − 저당)를 구하시오.\n\n② 검정통계량 t를 구하시오. (기존 − 저당 방향)\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 둘째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_03.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_03.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 둘째 자리까지",
+     "value": "37.89"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "2.911"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0049"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_03.csv')\na = df.loc[df['recipe'] == '기존', 'volume_cc']\nb = df.loc[df['recipe'] == '저당', 'volume_cc']\n\nres = stats.ttest_ind(a, b, equal_var=True)\na1 = a.mean() - b.mean()\na2 = res.statistic\na3 = res.pvalue\n\nprint(round(a1, 2))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "고단백 레시피는 비교 대상이 아니므로 두 레시피만 뽑는다. 등분산을 가정하므로 합동분산 sp² = ((n1−1)s1² + (n2−1)s2²) / (n1+n2−2)를 쓰고 자유도는 n1+n2−2다.\n`ttest_ind`의 기본값이 `equal_var=True`라 이 문제에서는 기본값 그대로 맞는다. `equal_var=False`(Welch)로 하면 두 집단 크기와 분산이 달라 p-value가 달라진다.\n인자를 (저당, 기존) 순서로 넣으면 ①②의 부호가 뒤집힌다."
+  },
+  {
+   "id": "x3-04",
+   "set": "x3",
+   "type": 3,
+   "no": "04",
+   "points": 15,
+   "title": "웰치 t검정 — 정수장 잔류염소 농도",
+   "statement": "어느 시 상수도사업본부가 두 정수장(북부, 남부)에서 내보낸 수돗물의 잔류염소 농도를 한 달 동안 표본 측정했다. 데이터 `x3_04.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| sample_id | 시료 ID |\n| plant | 정수장 (북부, 남부) |\n| sample_day | 채수일(일) |\n| chlorine_mgL | 잔류염소 농도(mg/L) |\n\n두 정수장의 평균 잔류염소 농도가 같은지 독립표본 t검정으로 검정하시오. 두 정수장의 농도는 각각 정규분포를 따르고 서로 독립이며, 두 모분산이 같다고 가정하지 않는다.\n\n- 귀무가설: μ북부 = μ남부, 대립가설: μ북부 ≠ μ남부 (양측 검정)\n- 자유도는 Welch–Satterthwaite 근사식으로 구한다.\n- 유의수준은 0.05이다.\n\n① 검정통계량 t를 구하시오. (북부 − 남부 방향)\n\n② 자유도를 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 둘째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_04.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_04.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "-1.884"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 둘째 자리까지",
+     "value": "29.64"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0694"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_04.csv')\na = df.loc[df['plant'] == '북부', 'chlorine_mgL']\nb = df.loc[df['plant'] == '남부', 'chlorine_mgL']\n\nres = stats.ttest_ind(a, b, equal_var=False)\nva, vb = a.var(ddof=1) / len(a), b.var(ddof=1) / len(b)\n\na1 = res.statistic\na2 = (va + vb) ** 2 / (va ** 2 / (len(a) - 1) + vb ** 2 / (len(b) - 1))\na3 = res.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 2))\nprint(round(a3, 4))",
+   "explain": "등분산을 가정하지 않으므로 `ttest_ind(..., equal_var=False)`(Welch 검정)다. 기본값 `equal_var=True`로 두면 이 데이터에서는 p-value가 0.05보다 작아져 판정이 기각으로 뒤집힌다. 표본이 많은 북부의 분산이 작아 합동분산이 작게 잡히기 때문이다.\nt = (x̄1 − x̄2) / √(s1²/n1 + s2²/n2), 자유도 = (s1²/n1 + s2²/n2)² / [(s1²/n1)²/(n1−1) + (s2²/n2)²/(n2−1)]이다. scipy 1.11 이상이면 `res.df`로도 자유도를 볼 수 있다."
+  },
+  {
+   "id": "x3-05",
+   "set": "x3",
+   "type": 3,
+   "no": "05",
+   "points": 15,
+   "title": "대응표본 t검정 — 압축 프로그램 처리 시간",
+   "statement": "어느 IT 매체가 노트북 60대에서 같은 폴더(약 20GB)를 두 압축 프로그램(A, B)으로 각각 한 번씩 압축하고 걸린 시간을 쟀다. 한 행이 노트북 한 대이다. 데이터 `x3_05.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| laptop_id | 노트북 ID |\n| ram_gb | 메모리 용량(GB) |\n| tool_a_sec | 프로그램 A 압축 시간(초) |\n| tool_b_sec | 프로그램 B 압축 시간(초) |\n\n노트북별로 차이 d = tool_a_sec − tool_b_sec를 만들고, 두 프로그램의 평균 압축 시간이 같은지 대응표본 t검정으로 검정하시오. 차이는 정규분포를 따른다고 가정한다.\n\n- 귀무가설: μd = 0, 대립가설: μd ≠ 0 (양측 검정)\n- 유의수준은 0.05이다.\n\n① 차이 d의 표본평균을 구하시오.\n\n② 검정통계량 t를 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_05.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_05.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "1.228"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "2.194"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0322"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_05.csv')\nd = df['tool_a_sec'] - df['tool_b_sec']\n\nres = stats.ttest_rel(df['tool_a_sec'], df['tool_b_sec'])\na1 = d.mean()\na2 = res.statistic\na3 = res.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "같은 노트북에서 두 프로그램을 잰 짝지은 자료라 대응표본 검정이다. t = d̄ / (s_d / √n), 자유도 n−1. `ttest_1samp(d, 0)`과 같은 값이다.\n독립표본 t검정(`ttest_ind`)으로 하면 노트북 사이의 성능 차이(수십 초)가 오차에 섞여 p-value가 0.3을 넘고 차이를 놓친다.\n인자 순서를 (B, A)로 바꾸면 t의 부호만 뒤집힌다."
+  },
+  {
+   "id": "x3-06",
+   "set": "x3",
+   "type": 3,
+   "no": "06",
+   "points": 15,
+   "title": "샤피로–윌크 정규성 검정 — 신규 이용자 플레이 시간",
+   "statement": "어느 모바일 게임사가 이용자 228명의 지난주 하루 평균 플레이 시간을 뽑았다. 데이터 `x3_06.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| user_id | 이용자 ID |\n| device | 기기 (android, ios) |\n| signup_days | 가입 후 경과 일수(일) |\n| play_min | 하루 평균 플레이 시간(분) |\n\n가입 후 경과 일수가 30일 이하인 신규 이용자만 대상으로, play_min이 정규분포를 따르는지 샤피로–윌크(Shapiro–Wilk) 검정으로 검정하시오.\n\n- 귀무가설: 신규 이용자의 play_min은 정규분포를 따른다.\n- 유의수준은 0.05이다.\n\n① 검정통계량 W를 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 넷째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
+   "files": [
+    "x3/x3_06.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_06.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.9899"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.7996"
+    },
+    {
+     "label": "③",
+     "format": "기각 또는 채택",
+     "value": "채택"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_06.csv')\nnew = df.loc[df['signup_days'] <= 30, 'play_min']\n\na1, a2 = stats.shapiro(new)\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 4))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "경과 일수 30일 이하(30 포함)인 행만 남긴다. 전체 이용자로 검정하면 오래된 이용자의 오른쪽으로 긴 꼬리 때문에 p-value가 0.01보다 작아져 기각으로 뒤집힌다.\n샤피로–윌크 검정의 귀무가설은 \"정규분포를 따른다\"이다. p-value가 0.05보다 크므로 채택(정규성 가정을 기각하지 못함)이다.\nW는 1에 가까울수록 정규분포에 가깝다."
+  },
+  {
+   "id": "x3-07",
+   "set": "x3",
+   "type": 3,
+   "no": "07",
+   "points": 15,
+   "title": "레빈·바틀렛 등분산 검정 — 시내버스 노선별 배차 간격",
+   "statement": "어느 시 교통정보센터가 시내버스 세 노선(101번, 230번, 702번)의 정류장 도착 기록에서 연이은 두 차량의 배차 간격을 뽑았다. 데이터 `x3_07.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| record_id | 기록 ID |\n| route | 노선 (101번, 230번, 702번) |\n| interval_min | 배차 간격(분) |\n| hour | 도착 시각(시) |\n\n세 노선의 배차 간격 모분산이 모두 같다는 귀무가설을 두 가지 방법으로 검정하시오.\n\n- 레빈(Levene) 검정은 각 관측값과 그 노선 평균의 차의 절댓값으로 계산한다.\n- 바틀렛(Bartlett) 검정은 각 노선의 배차 간격이 정규분포를 따른다고 가정한다.\n- 유의수준은 0.05이다.\n\n① 레빈 검정의 검정통계량을 구하시오.\n\n② 레빈 검정의 p-value를 구하시오.\n\n③ 바틀렛 검정의 p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_07.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_07.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "1.078"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.3433"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.4830"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_07.csv')\ngroups = [g['interval_min'] for _, g in df.groupby('route')]\n\nlev = stats.levene(*groups, center='mean')\nbar = stats.bartlett(*groups)\na1 = lev.statistic\na2 = lev.pvalue\na3 = bar.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(round(a3, 4))",
+   "explain": "scipy `levene`의 기본값은 `center='median'`(Brown–Forsythe 변형)이다. 지문이 평균 기준이므로 `center='mean'`을 줘야 하며, 기본값으로 두면 ①②가 달라진다.\n레빈 검정은 |x − 집단 평균|에 일원분산분석을 한 것과 같다. 바틀렛 검정은 정규성에 민감해 꼬리가 두꺼운 자료에서는 레빈과 p-value가 크게 다를 수 있다."
+  },
+  {
+   "id": "x3-08",
+   "set": "x3",
+   "type": 3,
+   "no": "08",
+   "points": 15,
+   "title": "일원분산분석과 Tukey HSD — 프린터 카트리지 출력 매수",
+   "statement": "어느 사무용품 비교 사이트가 호환 잉크 카트리지 네 브랜드(A, B, C, D)를 같은 프린터에 끼우고, 인쇄 면적 5% 문서를 잉크가 다 떨어질 때까지 출력한 매수를 기록했다. 데이터 `x3_08.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| cartridge_id | 카트리지 ID |\n| brand | 브랜드 (A, B, C, D) |\n| pages | 출력 매수(장) |\n| coverage_pct | 문서 인쇄 면적(%) |\n\n네 브랜드의 평균 출력 매수가 모두 같다는 귀무가설을 일원분산분석으로 검정하고, 사후검정으로 Tukey HSD를 수행하시오. 각 브랜드의 출력 매수는 정규분포를 따르고 분산이 같다고 가정한다.\n\n- F검정은 오른쪽 꼬리(상측) 검정이다.\n- 유의수준은 0.05이며, 사후검정의 유의 여부는 Tukey 방법으로 조정한 p-value로 판단한다.\n\n① 일원분산분석의 F 통계량을 구하시오.\n\n② Tukey HSD 결과 평균 출력 매수가 유의하게 다른 브랜드 쌍의 개수를 구하시오.\n\n③ 여섯 쌍 가운데 두 브랜드 표본평균의 차(절댓값)가 가장 큰 쌍을 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 정수 ③ 두 브랜드를 알파벳순으로 하이픈(-)으로 이어 쓴다 (예: A-B)",
+   "files": [
+    "x3/x3_08.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_08.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "20.821"
+    },
+    {
+     "label": "②",
+     "format": "정수",
+     "value": "4"
+    },
+    {
+     "label": "③",
+     "format": "두 브랜드를 알파벳순으로 하이픈(-)으로 이어 쓴다 (예: A-B)",
+     "value": "C-D"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\nfrom statsmodels.stats.multicomp import pairwise_tukeyhsd\n\ndf = pd.read_csv('data/x3_08.csv')\ngroups = [g['pages'] for _, g in df.groupby('brand')]\na1 = stats.f_oneway(*groups).statistic\n\ntk = pairwise_tukeyhsd(df['pages'], df['brand'], alpha=0.05)\nres = pd.DataFrame(tk.summary().data[1:], columns=tk.summary().data[0])\na2 = int(res['reject'].sum())\n\nbig = res.loc[res['meandiff'].abs().idxmax()]\na3 = f\"{big['group1']}-{big['group2']}\"\n\nprint(round(a1, 3))\nprint(a2)\nprint(a3)",
+   "explain": "`pairwise_tukeyhsd(값, 집단)` 결과표의 reject 열이 True인 쌍이 ②다. group1·group2는 알파벳순으로 나오고 meandiff는 group2 − group1이므로 절댓값으로 비교한다.\n두 브랜드씩 보정 없이 t검정을 여섯 번 하면 1종 오류가 부풀어 유의한 쌍이 더 많이 나온다. Tukey HSD는 여섯 비교 전체의 유의수준을 0.05로 맞춘다.\nscipy 1.8 이상의 `stats.tukey_hsd(*groups)`도 같은 판정을 준다(`pvalue` 행렬). F는 `f_oneway` 또는 `anova_lm(smf.ols('pages ~ C(brand)', df).fit())`로 같다."
+  },
+  {
+   "id": "x3-09",
+   "set": "x3",
+   "type": 3,
+   "no": "09",
+   "points": 15,
+   "title": "이원분산분석 — 도료와 건조 방식별 도막 경도",
+   "statement": "어느 도료 회사 연구소가 세 도료(수성, 유성, 우레탄)를 두 건조 방식(자연, 열풍) 가운데 하나로 말린 시험판에 칠하고 도막 경도를 측정했다. 조합마다 시험판 수가 다르다. 데이터 `x3_09.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| panel_id | 시험판 ID |\n| paint | 도료 (수성, 유성, 우레탄) |\n| drying | 건조 방식 (자연, 열풍) |\n| hardness | 도막 경도 지수 |\n\nhardness를 종속변수로, paint와 drying 두 요인의 주효과와 상호작용효과를 모두 포함하는 이원분산분석을 수행하시오. 오차는 정규분포를 따르고 등분산이라고 가정한다.\n\n- 각 효과의 제곱합은 제2종(Type II) 제곱합으로 계산한다.\n- F검정은 오른쪽 꼬리(상측) 검정이며, 유의수준은 0.05이다.\n\n① 상호작용효과(paint × drying)의 F 통계량을 구하시오.\n\n② 상호작용효과의 p-value를 구하시오.\n\n③ paint 주효과의 p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_09.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_09.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "4.648"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0127"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0008"
+    }
+   ],
+   "solution": "import pandas as pd\nimport statsmodels.formula.api as smf\nfrom statsmodels.stats.anova import anova_lm\n\ndf = pd.read_csv('data/x3_09.csv')\nmodel = smf.ols('hardness ~ C(paint) * C(drying)', data=df).fit()\ntable = anova_lm(model, typ=2)\n\na1 = table.loc['C(paint):C(drying)', 'F']\na2 = table.loc['C(paint):C(drying)', 'PR(>F)']\na3 = table.loc['C(paint)', 'PR(>F)']\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(round(a3, 4))",
+   "explain": "`C(paint) * C(drying)`는 두 주효과와 상호작용을 모두 넣는다. `anova_lm`의 기본값은 `typ=1`(순차 제곱합)이다. 조합마다 표본 수가 달라(불균형) 제1종에서는 먼저 들어간 paint의 제곱합이 drying을 보정하지 않은 값이 되어 ③이 달라진다. 제2종은 각 주효과를 다른 주효과로 보정한다.\n상호작용항은 모형의 마지막 항이라 제1종·제2종에서 같다. 숫자형 칼럼이 아니어도 `C()`로 감싸면 범주로 처리된다."
+  },
+  {
+   "id": "x3-10",
+   "set": "x3",
+   "type": 3,
+   "no": "10",
+   "points": 15,
+   "title": "카이제곱 적합도 검정 — 요일별 수영장 안전사고",
+   "statement": "어느 시립 수영장이 2026년 3월 2일(월)부터 8월 30일(일)까지 26주 동안 접수된 안전사고를 한 건씩 기록했다. 이 기간에는 월요일부터 일요일까지 각 요일이 26일씩 있으며, 수영장은 휴관일 없이 매일 운영했다. 데이터 `x3_10.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| incident_id | 사고 ID |\n| occurred_at | 발생 일시 (YYYY-MM-DD HH:MM) |\n| kind | 사고 유형 |\n\n안전사고가 요일과 관계없이 고르게(일곱 요일이 각각 1/7의 비율로) 발생한다는 귀무가설을 카이제곱 적합도 검정으로 검정하시오.\n\n- 카이제곱 검정은 오른쪽 꼬리(상측) 검정이며, 유의수준은 0.05이다.\n\n① 사고가 가장 많이 발생한 요일의 사고 건수를 구하시오.\n\n② 검정통계량을 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 정수 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_10.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_10.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "정수",
+     "value": "39"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "13.343"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0379"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_10.csv')\ndf['occurred_at'] = pd.to_datetime(df['occurred_at'])\nobs = df['occurred_at'].dt.dayofweek.value_counts().reindex(range(7), fill_value=0)\n\nexp = [len(df) / 7] * 7\nres = stats.chisquare(obs, f_exp=exp)\na1 = obs.max()\na2 = res.statistic\na3 = res.pvalue\n\nprint(int(a1))\nprint(round(a2, 3))\nprint(round(a3, 4))",
+   "explain": "발생 일시를 날짜형으로 바꾼 뒤 `dt.dayofweek`(월=0 … 일=6)로 요일을 뽑아 센다. 기대빈도는 전체 건수 / 7이고, `chisquare`의 `f_exp`를 생략해도 균등 분포로 계산한다.\n자유도는 범주 수 − 1 = 6이다. 각 요일이 26일씩으로 같으므로 기대비율이 1/7씩이다. 기간에 요일별 일수가 다르면 기대빈도를 일수에 비례하게 잡아야 한다."
+  },
+  {
+   "id": "x3-11",
+   "set": "x3",
+   "type": 3,
+   "no": "11",
+   "points": 15,
+   "title": "카이제곱 독립성 검정(Yates 보정) — 무료배송 표시와 장바구니 이탈",
+   "statement": "어느 온라인 쇼핑몰이 장바구니 화면에 무료배송 안내 문구를 무작위로 표시하거나 표시하지 않고, 그 세션에서 결제하지 않고 떠났는지(장바구니 이탈)를 기록했다. 한 행이 세션 하나이다. 데이터 `x3_11.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| session_id | 세션 ID |\n| device | 접속 기기 (모바일, PC) |\n| free_ship_badge | 무료배송 문구 (표시, 미표시) |\n| abandoned | 장바구니 이탈 여부 (Y, N) |\n\nfree_ship_badge와 abandoned로 2×2 분할표를 만들고, 두 변수가 서로 독립이라는 귀무가설을 카이제곱 독립성 검정으로 검정하시오.\n\n- 연속성 보정(Yates)을 적용한다.\n- 카이제곱 검정은 오른쪽 꼬리(상측) 검정이며, 유의수준은 0.05이다.\n\n① 검정통계량을 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
+   "files": [
+    "x3/x3_11.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_11.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "3.522"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0606"
+    },
+    {
+     "label": "③",
+     "format": "기각 또는 채택",
+     "value": "채택"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_11.csv')\ntable = pd.crosstab(df['free_ship_badge'], df['abandoned'])\n\nchi2, p, dof, expected = stats.chi2_contingency(table, correction=True)\na1 = chi2\na2 = p\na3 = '기각' if p < 0.05 else '채택'\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "원자료는 `pd.crosstab`으로 빈도표를 먼저 만든다. `chi2_contingency`는 자유도가 1(2×2 표)일 때 기본값 `correction=True`로 Yates 보정을 적용하므로 이 문제에서는 기본값 그대로 맞는다.\nYates 보정은 각 칸에서 |관측 − 기대|를 0.5만큼 줄여 통계량을 작게 만든다. 보정을 끄면(`correction=False`) 이 데이터에서는 p-value가 0.05보다 작아져 판정이 기각으로 뒤집힌다.\n자유도는 (2−1)×(2−1) = 1이다. device는 쓰지 않는다."
+  },
+  {
+   "id": "x3-12",
+   "set": "x3",
+   "type": 3,
+   "no": "12",
+   "points": 15,
+   "title": "맨–휘트니 U 검정(단측) — 이어폰 착용감 점수",
+   "statement": "어느 음향기기 회사가 무선 이어폰 신형과 구형을 체험단에게 무작위로 나눠 주고 일주일 사용 후 착용감을 1~10점으로 평가받았다. 한 사람은 한 기종만 평가했다. 데이터 `x3_12.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| tester_id | 체험단 ID |\n| age | 나이 |\n| model | 평가한 기종 (신형, 구형) |\n| comfort | 착용감 점수(1~10, 정수) |\n\n착용감 점수는 정규분포를 가정하기 어렵다. 신형의 착용감 점수가 구형보다 높은 쪽으로 치우쳐 있는지 맨–휘트니 U 검정(윌콕슨 순위합 검정)으로 검정하시오.\n\n- 귀무가설: 두 기종의 점수 분포가 같다. 대립가설: 신형의 점수가 구형보다 큰 쪽으로 치우쳐 있다 (단측 검정).\n- 동점은 평균 순위를 주고, p-value는 동순위 보정을 한 정규근사로 구하며 연속성 보정을 적용한다.\n- 유의수준은 0.05이다.\n\n① 신형 기준의 U 통계량 (신형 점수의 순위합 − n신형(n신형+1)/2)을 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 첫째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
+   "files": [
+    "x3/x3_12.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_12.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 첫째 자리까지",
+     "value": "1440.5"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0391"
+    },
+    {
+     "label": "③",
+     "format": "기각 또는 채택",
+     "value": "기각"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_12.csv')\nnew = df.loc[df['model'] == '신형', 'comfort']\nold = df.loc[df['model'] == '구형', 'comfort']\n\nres = stats.mannwhitneyu(new, old, alternative='greater')\na1 = res.statistic\na2 = res.pvalue\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 1))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "`mannwhitneyu(x, y)`의 statistic은 첫 번째 인자(x) 기준 U다. 인자 순서를 바꾸면 U가 n1·n2 − U로 바뀌고, alternative도 'less'로 바꿔야 같은 p-value가 나온다.\n동점이 많으면 기본값 `method='auto'`가 정규근사를 고르며 동순위 보정과 연속성 보정(`use_continuity=True`)을 적용한다.\n대립가설이 \"신형이 더 크다\"이므로 `alternative='greater'`다. 기본값(양측)으로 두면 p-value가 약 두 배가 되어 0.05를 넘고 판정이 채택으로 뒤집힌다."
+  },
+  {
+   "id": "x3-13",
+   "set": "x3",
+   "type": 3,
+   "no": "13",
+   "points": 15,
+   "title": "윌콕슨 부호순위 검정 — 메신저 도입 전후 이메일 발송 수",
+   "statement": "어느 회사가 사내 메신저를 도입하고, 직원 72명의 도입 전 한 주와 도입 후 한 주의 업무 이메일 발송 건수를 비교했다. 한 행이 직원 한 명이다. 데이터 `x3_13.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| emp_id | 직원 ID |\n| dept | 부서 |\n| before_mail | 도입 전 주간 이메일 발송 건수 |\n| after_mail | 도입 후 주간 이메일 발송 건수 |\n\n직원별로 차이 d = after_mail − before_mail을 만들고, d의 분포가 0을 중심으로 대칭이라는 귀무가설을 윌콕슨 부호순위 검정으로 검정하시오.\n\n- 대립가설은 \"0을 중심으로 대칭이 아니다\"이다 (양측 검정).\n- d = 0인 직원은 분석에서 제외한다. |d|가 같으면 평균 순위를 준다.\n- p-value는 동순위 보정을 한 정규근사로 구하며, 연속성 보정은 적용하지 않는다.\n- 유의수준은 0.05이다.\n\n① d = 0인 직원을 제외한 분석 인원을 구하시오.\n\n② 양(+)의 부호순위합과 음(−)의 부호순위합 가운데 작은 값을 검정통계량으로 할 때, 그 값을 구하시오.\n\n③ p-value를 구하시오.\n\n【제출 형식】 ① 정수 ② 반올림하여 소수 첫째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_13.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_13.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "정수",
+     "value": "53"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 첫째 자리까지",
+     "value": "455.0"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0206"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_13.csv')\nd = df['after_mail'] - df['before_mail']\n\nres = stats.wilcoxon(df['after_mail'], df['before_mail'])\na1 = (d != 0).sum()\na2 = res.statistic\na3 = res.pvalue\n\nprint(int(a1))\nprint(round(a2, 1))\nprint(round(a3, 4))",
+   "explain": "`wilcoxon(x, y)`는 d = x − y로 계산하고, 기본값 `zero_method='wilcox'`가 d = 0인 쌍을 버린 뒤 순위를 매긴다. 양측 검정의 statistic은 양·음 순위합 중 작은 값이다.\n분석 인원이 50을 넘고 동점이 있어 기본값 `method='auto'`가 정규근사를 쓰며, 기본값 `correction=False`라 연속성 보정은 하지 않는다.\n`zero_method='zsplit'`이나 'pratt'처럼 0을 순위에 넣으면 ②③이 달라진다. 정규성을 가정하는 대응 t검정과도 p-value가 다르다."
+  },
+  {
+   "id": "x3-14",
+   "set": "x3",
+   "type": 3,
+   "no": "14",
+   "points": 15,
+   "title": "크러스컬–월리스 검정 — 요금제별 월 데이터 사용량",
+   "statement": "어느 알뜰폰 통신사가 가입 회선 124개의 지난달 모바일 데이터 사용량을 뽑았다. 일부 회선은 집계 오류로 사용량이 비어 있다. 데이터 `x3_14.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| line_id | 회선 ID |\n| plan | 요금제 (라이트, 스탠다드, 프리미엄, 무제한) |\n| data_gb | 지난달 데이터 사용량(GB) |\n| tenure_m | 가입 기간(개월) |\n\n무제한 요금제를 제외한 세 요금제(라이트, 스탠다드, 프리미엄)만 대상으로 하고, data_gb가 결측인 행을 제거한 뒤, 세 요금제의 데이터 사용량 분포가 모두 같다는 귀무가설을 크러스컬–월리스(Kruskal–Wallis) 검정으로 검정하시오.\n\n- 동점은 평균 순위를 주고, 검정통계량은 동순위 보정을 한 H이며, p-value는 카이제곱 근사로 구한다.\n- 유의수준은 0.05이다.\n\n① 검정통계량 H를 구하시오.\n\n② p-value를 구하시오.\n\n③ 유의수준 0.05에서 귀무가설을 기각하는지 채택하는지 쓰시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 기각 또는 채택",
+   "files": [
+    "x3/x3_14.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_14.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "6.818"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0331"
+    },
+    {
+     "label": "③",
+     "format": "기각 또는 채택",
+     "value": "기각"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_14.csv')\ndf = df[df['plan'] != '무제한'].dropna(subset=['data_gb'])\n\ngroups = [g['data_gb'] for _, g in df.groupby('plan')]\na1, a2 = stats.kruskal(*groups)\na3 = '기각' if a2 < 0.05 else '채택'\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(a3)",
+   "explain": "무제한 요금제를 먼저 빼고, 결측을 지운다. 결측이 남아 있으면 `kruskal`이 nan을 돌려준다. 무제한까지 넣으면 사용량이 훨씬 큰 집단이 섞여 H가 크게 달라진다.\nH의 자유도는 집단 수 − 1 = 2인 카이제곱 분포로 p-value를 낸다. 사용량은 오른쪽으로 긴 꼬리라 평균을 비교하는 일원분산분석으로 하면 이 데이터에서는 판정이 갈린다."
+  },
+  {
+   "id": "x3-15",
+   "set": "x3",
+   "type": 3,
+   "no": "15",
+   "points": 15,
+   "title": "피어슨·스피어만 상관 검정 — 웹툰 연재 회차와 댓글 수",
+   "statement": "어느 웹툰 플랫폼이 완결 작품 70편의 총 연재 회차 수와 회당 평균 댓글 수를 정리했다. 데이터 `x3_15.csv`의 칼럼은 다음과 같다.\n\n| 칼럼 | 설명 |\n|---|---|\n| title_id | 작품 ID |\n| genre | 장르 |\n| episodes | 총 연재 회차 수 |\n| avg_comments | 회당 평균 댓글 수 |\n\nepisodes와 avg_comments 사이에 상관관계가 있는지 두 가지 상관계수로 검정하시오.\n\n- 두 검정 모두 귀무가설은 \"모상관계수 = 0\", 대립가설은 \"모상관계수 ≠ 0\"(양측 검정)이다.\n- 스피어만 순위상관은 동점에 평균 순위를 준다.\n- 두 검정의 p-value는 모두 t분포 근사(검정통계량 t = r√(n−2)/√(1−r²), 자유도 n−2)로 구한다.\n- 유의수준은 0.05이다.\n\n① 피어슨 상관계수를 구하시오.\n\n② 피어슨 상관계수 검정의 p-value를 구하시오.\n\n③ 스피어만 순위상관계수 검정의 p-value를 구하시오.\n\n【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 넷째 자리까지",
+   "files": [
+    "x3/x3_15.csv"
+   ],
+   "starter": "import pandas as pd\ndf = pd.read_csv('data/x3_15.csv')\n",
+   "answers": [
+    {
+     "label": "①",
+     "format": "반올림하여 소수 셋째 자리까지",
+     "value": "-0.127"
+    },
+    {
+     "label": "②",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.2958"
+    },
+    {
+     "label": "③",
+     "format": "반올림하여 소수 넷째 자리까지",
+     "value": "0.0228"
+    }
+   ],
+   "solution": "import pandas as pd\nfrom scipy import stats\n\ndf = pd.read_csv('data/x3_15.csv')\n\npr = stats.pearsonr(df['episodes'], df['avg_comments'])\nsr = stats.spearmanr(df['episodes'], df['avg_comments'])\na1 = pr.statistic\na2 = pr.pvalue\na3 = sr.pvalue\n\nprint(round(a1, 3))\nprint(round(a2, 4))\nprint(round(a3, 4))",
+   "explain": "피어슨은 값 그대로의 선형 관계를, 스피어만은 순위의 관계를 본다. 댓글 수가 몇 작품에서 수천 단위로 튀어 피어슨 상관계수가 그 몇 점에 끌려가 부호까지 음수로 바뀐다. 순위로 보면 회차가 많을수록 댓글이 많은 양의 관계(ρ ≈ 0.27)라 이 데이터에서는 두 검정의 판정이 서로 다르다.\n피어슨 p-value는 t = r√(n−2)/√(1−r²), 자유도 n−2의 t분포에서 나온다. 스피어만 p-value도 순위상관계수로 같은 t 근사를 쓴다. `df[['episodes', 'avg_comments']].corr(method='spearman')`은 계수만 주고 p-value는 주지 않는다."
   }
  ]
 }

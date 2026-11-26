@@ -19,7 +19,7 @@ for p in bank["problems"]:
         if r.returncode:
             bad += 1; print(p["id"], "실행 오류", r.stderr.strip().splitlines()[-1:]); continue
         if p["type"] in (1, 3):
-            out = r.stdout.split()
+            out = r.stdout.split() + [l.strip() for l in r.stdout.splitlines()]   # 공백이 든 답(「푸른 등대」)은 줄 단위로
             want = [str(a["value"]) for a in p["answers"]]
             def same(a, b):
                 try: return float(a) == float(b)

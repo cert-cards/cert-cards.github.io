@@ -1,4 +1,4 @@
-"""작업형2 데이터 생성 (m1~m5). 시드 고정.
+"""작업형2 데이터 생성 (m1~m7). 시드 고정.
 사용: python gen.py <out_root>   (out_root/m<N>/train.csv, test.csv, t2_truth.csv)
 """
 import sys, os
@@ -243,6 +243,117 @@ def m5():
     save('m5', tr, te, truth)
 
 
-for f in (m1, m2, m3, m4, m5):
+# ---------------------------------------------------------------- m6
+# 미용실 예약 노쇼 이진분류, ROC-AUC. 함정: 타깃이 문자('노쇼','방문')이고 양성(노쇼)이 정렬상 앞
+#   -> classes_ = ['노쇼', '방문'], predict_proba[:, 1]은 방문 확률
+def m6():
+    rng = np.random.default_rng(1606)
+    ntr, nte = 3000, 1000
+    n = ntr + nte
+    branch = rng.choice(['성수', '합정', '판교', '광교', '송파'], n, p=[.24, .22, .2, .18, .16])
+    service = rng.choice(['커트', '펌', '염색', '클리닉'], n, p=[.45, .22, .2, .13])
+    channel = rng.choice(['앱', '전화', '포털', '방문'], n, p=[.4, .2, .3, .1])
+    lead = np.clip(np.round(rng.gamma(1.4, 4.5, n)), 0, 45).astype(int)
+    slot = rng.choice(['오전', '오후', '저녁'], n, p=[.25, .45, .3])
+    weekend = rng.choice(['Y', 'N'], n, p=[.35, .65])
+    age = np.clip(np.round(rng.normal(31, 9, n)), 16, 68).astype(int)
+    first = rng.choice(['Y', 'N'], n, p=[.3, .7])
+    past_visits = np.where(first == 'Y', 0, np.clip(rng.poisson(5, n), 1, 40)).astype(int)
+    past_noshow = np.where(first == 'Y', 0, rng.binomial(past_visits, rng.beta(1.2, 12, n))).astype(int)
+    deposit = rng.choice(['Y', 'N'], n, p=[.35, .65])
+    deposit = np.where(np.isin(service, ['펌', '염색']) & (rng.random(n) < 0.35), 'Y', deposit)
+    reminder = np.where(rng.random(n) < np.where(channel == '앱', 0.7, 0.45), 'Y', 'N')
+    price_base = {'커트': 22, '펌': 95, '염색': 80, '클리닉': 55}
+    price = np.round(np.array([price_base[s] for s in service]) * np.exp(rng.normal(0, 0.18, n))).astype(int)
+    rain = rng.choice(['Y', 'N'], n, p=[.2, .8])
+
+    ceff = {'앱': 0.0, '전화': -0.35, '포털': 0.45, '방문': -0.6}
+    seff = {'오전': 0.35, '오후': 0.0, '저녁': -0.1}
+    z = (-2.1
+         + 0.55 * np.log1p(lead)
+         - 1.2 * (deposit == 'Y')
+         - 0.8 * (reminder == 'Y')
+         + 0.9 * np.minimum(past_noshow, 4) - 0.06 * np.minimum(past_visits, 15)
+         + 0.5 * (first == 'Y') + 0.6 * ((first == 'Y') & (deposit == 'N') & (lead > 7))
+         + np.array([ceff[c] for c in channel])
+         + np.array([seff[s] for s in slot])
+         + 0.25 * (weekend == 'N')
+         - 0.022 * (age - 31)
+         - 0.006 * (price - 50)
+         + 0.45 * (rain == 'Y')
+         + rng.normal(0, 0.3, n))
+    p = 1 / (1 + np.exp(-z))
+    noshow = rng.random(n) < p
+    result = np.where(noshow, '노쇼', '방문')
+    df = pd.DataFrame({'branch': branch, 'service': service, 'channel': channel, 'lead_days': lead,
+                       'slot': slot, 'weekend': weekend, 'age': age, 'first_visit': first,
+                       'past_visits': past_visits, 'past_noshow': past_noshow, 'deposit': deposit,
+                       'reminder': reminder, 'price': price, 'rain': rain, 'result': result})
+    tr, te = df.iloc[:ntr].copy(), df.iloc[ntr:].copy()
+    tr.insert(0, 'booking_id', ['R%06d' % i for i in rng.permutation(np.arange(300000, 300000 + ntr))])
+    te.insert(0, 'booking_id', ['R%06d' % i for i in rng.permutation(np.arange(400000, 400000 + nte))])
+    truth = (te.pop('result').values == '노쇼').astype(int)   # 채점용: 1 = 노쇼
+    save('m6', tr, te, truth)
+
+
+# ---------------------------------------------------------------- m7
+# 시립도서관 분관 일 대출 권수 회귀, RMSE. 함정: 날짜(date) 문자열 — test 기간이 train 뒤라
+#   그대로 원-핫하면 test 날짜가 train에 없어 요일·월 정보가 사라진다 -> 월·요일을 뽑아야 한다
+def m7():
+    rng = np.random.default_rng(1707)
+    days = pd.date_range('2024-03-01', '2026-02-28', freq='D')
+    days = days[days.dayofweek != 0]                      # 월요일 휴관
+    branches = ['중앙', '해오름', '별빛', '솔숲', '물빛']
+    bbase = {'중앙': 520, '해오름': 260, '별빛': 210, '솔숲': 300, '물빛': 170}
+    bseats = {'중앙': 420, '해오름': 180, '별빛': 150, '솔숲': 220, '물빛': 120}
+    hol = {'2024-03-01', '2024-04-10', '2024-05-05', '2024-05-06', '2024-05-15', '2024-06-06',
+           '2024-08-15', '2024-09-16', '2024-09-17', '2024-09-18', '2024-10-03', '2024-10-09',
+           '2024-12-25', '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-03-01',
+           '2025-03-03', '2025-05-05', '2025-05-06', '2025-06-03', '2025-06-06', '2025-08-15',
+           '2025-10-03', '2025-10-06', '2025-10-07', '2025-10-08', '2025-10-09', '2025-12-25',
+           '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18'}
+    D = np.repeat(days.values, len(branches))
+    D = pd.DatetimeIndex(D)
+    br = np.tile(branches, len(days))
+    n = len(D)
+    m = D.month.values
+    dow = D.dayofweek.values                              # 1=화 ... 6=일
+    dstr = D.strftime('%Y-%m-%d')
+    holiday = np.where(np.isin(dstr, list(hol)), 'Y', 'N')
+    # 날씨는 날짜별로 같게(분관이 같은 도시)
+    nd = len(days)
+    dm = days.month.values
+    temp_d = np.round(12.5 - 14 * np.cos((dm - 1 + days.day.values / 31) / 12 * 2 * np.pi) + rng.normal(0, 3.5, nd), 1)
+    rain_d = np.where(rng.random(nd) < 0.7, 0.0, np.round(rng.gamma(1.1, 10, nd), 1))
+    temp = np.repeat(temp_d, len(branches))
+    rain = np.repeat(rain_d, len(branches))
+    event = (rng.random(n) < 0.08).astype(int)
+    new_books = rng.poisson(np.array([bbase[b] / 6 for b in br])).astype(int)
+    seats = np.array([bseats[b] for b in br])
+
+    dmult = {1: 1.0, 2: 0.9, 3: 0.92, 4: 1.08, 5: 1.75, 6: 1.55}
+    mmult = {1: 1.4, 2: 1.3, 3: 0.88, 4: 0.92, 5: 1.0, 6: 0.9, 7: 1.3, 8: 1.45,
+             9: 0.86, 10: 0.95, 11: 0.85, 12: 1.12}
+    mean = np.array([bbase[b] for b in br], dtype=float)
+    mean *= np.array([dmult[d] for d in dow])
+    mean *= np.array([mmult[x] for x in m])
+    mean *= np.where((holiday == 'Y') & (dow < 5), 1.5, 1.0)
+    mean *= np.where(np.isin(br, ['해오름', '물빛']) & (dow >= 5), 1.2, 1.0)   # 주거지 분관은 주말 효과가 더 크다
+    mean *= np.exp(-0.012 * rain)
+    mean *= 1 + 0.012 * np.maximum(temp - 27, 0) + 0.01 * np.maximum(-2 - temp, 0)
+    mean *= np.where(event == 1, 1.15, 1.0)
+    mean *= (new_books / (np.array([bbase[b] for b in br]) / 6) + 0.5) ** 0.12
+    loans = np.round(mean * np.exp(rng.normal(0, 0.1, n))).astype(int)
+
+    df = pd.DataFrame({'date': dstr, 'branch': br, 'holiday': holiday, 'temp': temp,
+                       'rain_mm': rain, 'event': event, 'new_books': new_books, 'seats': seats,
+                       'loans': loans})
+    cut = D < pd.Timestamp('2025-09-01')
+    tr, te = df[cut].reset_index(drop=True), df[~cut].reset_index(drop=True)
+    truth = te.pop('loans').values
+    save('m7', tr, te, truth)
+
+
+for f in (m1, m2, m3, m4, m5, m6, m7):
     f()
 print('ok')

@@ -1,4 +1,4 @@
-# 작업형1 실습 문제 15개 생성기. 데이터 CSV와 parts/t1.json을 만든다.
+# 작업형1 실습 문제 21개 생성기. 데이터 CSV와 parts/t1.json을 만든다.
 # 각 문제: make(seed) -> df, check(df) -> (ok, raw_values, info). ok인 첫 시드를 쓴다.
 import json, math, os, sys
 import numpy as np
@@ -1062,9 +1062,529 @@ def m5_3():
                 answers=[('①', '반올림하여 소수 넷째 자리까지', None), ('②', '소수점 이하를 버리고 정수로', None)])
 
 
+# ---------------------------------------------------------------- m6-1-1
+@problem
+def m6_1():
+    movies = ['은하 우체국', '푸른 등대', '열두 번째 계절', '유리 정원', '북쪽 항구', '한밤의 교차로']
+    seats_of = {1: 210, 2: 172, 3: 146, 4: 128, 5: 118, 6: 96, 7: 84, 8: 64}
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        n = 960
+        mv = rng.choice(6, n, p=[.3, .16, .15, .14, .13, .12])
+        scr = rng.integers(1, 9, n)
+        seats = np.array([seats_of[s] for s in scr])
+        late = rng.random(n) < 0.12
+        # 회차가 가장 많은 영화는 점유율이 낮은 회차가 많다. 거르지 않으면 관객 합계 1위가 이 영화가 된다
+        occ = np.array([.2, .4, .37, .33, .3, .27])[mv] * rng.lognormal(0, 0.45, n)
+        tickets = np.clip(np.round(seats * occ), 0, seats).astype(int)
+        adult = rng.binomial(tickets, rng.beta(6, 3, n))
+        adult = np.where(late, tickets, adult)  # 심야 회차는 성인 요금만 받는다 → 객단가 14000 동률
+        youth = rng.binomial(tickets - adult, 0.6)
+        senior = tickets - adult - youth
+        revenue = adult * 14000 + youth * 11000 + senior * 7000
+        normal_t = ['09:20', '10:40', '12:10', '13:30', '15:00', '16:40', '18:10', '19:50', '21:10']
+        late_t = ['22:30', '23:10', '23:50']
+        st = np.where(late, rng.choice(late_t, n), rng.choice(normal_t, n))
+        dates = (pd.Timestamp('2025-10-01') + pd.to_timedelta(rng.integers(0, 31, n), 'D')).strftime('%Y-%m-%d')
+        df = pd.DataFrame({'show_date': dates, 'start_time': st, 'screen': scr, 'movie': np.array(movies)[mv],
+                           'seats': seats, 'tickets': tickets, 'revenue': revenue})
+        df = df.drop_duplicates(['show_date', 'start_time', 'screen'])
+        df = df.sort_values(['show_date', 'start_time', 'screen']).reset_index(drop=True)
+        df.insert(0, 'show_id', [f'SH{i:04d}' for i in range(1, len(df) + 1)])
+        return df
+
+    def solve(df, filt=True, tie_asc=True):
+        d = df[df['tickets'] / df['seats'] >= 0.3] if filt else df
+        tot = d.groupby('movie')['tickets'].sum().sort_values(ascending=False)
+        top = tot.index[0]
+        m = d[d['movie'] == top].copy()
+        m['per'] = m['revenue'] / m['tickets']
+        m = m.sort_values(['per', 'show_id'], ascending=[False, tie_asc])
+        return tot, top, m
+
+    def check(df):
+        tot, top, m = solve(df)
+        _, top0, _ = solve(df, filt=False)
+        _, _, mr = solve(df, tie_asc=False)
+        ans = int(m.iloc[3]['screen'])
+        ok = tot.iloc[0] - tot.iloc[1] >= 30 and top0 != top
+        ok &= m['per'].iloc[3] == m['per'].iloc[0] and int(mr.iloc[3]['screen']) != ans
+        return ok, [top, str(ans)], {'tot': tot.to_dict(), 'unfiltered_top': top0,
+                                     'ties14000': int((m['per'] == 14000).sum()), 'rev_tie': int(mr.iloc[3]['screen'])}
+
+    statement = (
+        "제공된 데이터(t1_1.csv)는 어느 멀티플렉스 영화관의 2025년 10월 상영 기록이다. 한 행이 상영 한 회차이다.\n\n"
+        + table([('show_id', '회차 ID (상영 시작 순서대로 매김)'), ('show_date', '상영일 (YYYY-MM-DD)'), ('start_time', '상영 시작 시각 (HH:MM)'),
+                 ('screen', '상영관 번호(1~8)'), ('movie', '영화 제목'), ('seats', '좌석 수'),
+                 ('tickets', '판매 관람권 수(매)'), ('revenue', '관람권 매출(원)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) 회차마다 좌석 점유율 = tickets / seats 를 계산한다.\n"
+        "- 2) 좌석 점유율이 0.3 이상인 회차만 남긴다.\n"
+        "- 3) 남은 회차로 movie별 tickets 합계를 구한다.\n\n"
+        "① tickets 합계가 가장 큰 movie를 구하시오.\n\n"
+        "② ①의 movie 회차(2)에서 남긴 회차)마다 객단가 = revenue / tickets 를 계산한다. 객단가가 높은 순으로 정렬했을 때"
+        "(객단가가 같으면 show_id 오름차순) 4번째 회차의 screen을 구하시오.\n\n"
+        "【제출 형식】 ① 영화 제목 그대로 ② 정수(1~8)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_1.csv')\n"
+        "df['occ'] = df['tickets'] / df['seats']\n"
+        "d = df[df['occ'] >= 0.3].copy()\n"
+        "top = d.groupby('movie')['tickets'].sum().idxmax()\n"
+        "print(top)\n"
+        "m = d[d['movie'] == top].copy()\n"
+        "m['per'] = m['revenue'] / m['tickets']\n"
+        "m = m.sort_values(['per', 'show_id'], ascending=[False, True])\n"
+        "print(m.iloc[3]['screen'])\n"
+    )
+    explain = (
+        "점유율로 먼저 거른 뒤 영화별 합계를 낸다. 거르지 않으면 회차가 가장 많은 영화가 빈 좌석 많은 회차까지 더해 1위가 되어 ①이 바뀐다.\n\n"
+        "②는 ①의 영화 회차 중 2)에서 남은 것만 쓴다. 심야 회차는 성인 관람권만 팔려 객단가가 14000원으로 같은 회차가 여럿이고 상위를 차지한다. "
+        "그래서 4번째는 동률 규칙(show_id 오름차순)으로 정해진다. sort_values에 ['per', 'show_id']와 ascending=[False, True]를 같이 준다. "
+        "show_id까지 내림차순으로 두면 다른 상영관이 나온다."
+    )
+    return dict(make=make, check=check, title='점유율 0.3 이상 회차의 관객 1위 영화와 객단가 4위 상영관',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('①', '영화 제목 그대로', None), ('②', '정수(1~8)', None)])
+
+
+# ---------------------------------------------------------------- m6-1-2
+@problem
+def m6_2():
+    items = ['텐트', '타프', '캠핑의자', '버너', '아이스박스', '랜턴', '침낭']
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        n = 1180
+        days = pd.date_range('2025-04-01', '2025-09-30', freq='D')
+        rd = days[rng.integers(0, len(days), n)]
+        booked = rng.choice([1, 2, 3, 4, 7], n, p=[.22, .34, .24, .12, .08])
+        dow = rd.dayofweek.values
+        # 금·토에 빌린 건이 더 자주 늦게 돌아온다
+        p_late = np.array([.13, .12, .14, .15, .24, .29, .17])[dow]
+        u = rng.random(n)
+        late = u < p_late
+        on_due = (~late) & (rng.random(n) < 0.55)       # 반납 예정일 당일 반납이 많다
+        delay = np.where(late, rng.integers(1, 5, n), np.where(on_due, 0, -rng.integers(1, 3, n)))
+        delay = np.maximum(delay, -booked)
+        ret = rd + pd.to_timedelta(booked + delay, 'D')
+        ret_s = pd.Series(ret.strftime('%Y-%m-%d'), dtype=object)
+        miss = rng.choice(n, 62, replace=False)
+        ret_s[miss] = np.nan
+        df = pd.DataFrame({'rent_date': rd.strftime('%Y-%m-%d'), 'item': rng.choice(items, n),
+                           'booked_days': booked, 'return_date': ret_s.values,
+                           'deposit': rng.choice([20000, 30000, 50000], n)})
+        df = df.sort_values('rent_date', kind='stable').reset_index(drop=True)
+        df.insert(0, 'rental_id', [f'CR{i:05d}' for i in range(1, n + 1)])
+        return df
+
+    def solve(df, ge=False, keep_na=False):
+        d = df.copy() if keep_na else df.dropna(subset=['return_date']).copy()
+        r = pd.to_datetime(d['rent_date'])
+        due = r + pd.to_timedelta(d['booked_days'], 'D')
+        ret = pd.to_datetime(d['return_date'])
+        late = (ret >= due) if ge else (ret > due)
+        g = late.groupby(r.dt.dayofweek).mean().sort_values(ascending=False) * 100
+        return g
+
+    def check(df):
+        g = solve(df)
+        v = g.iloc[0]
+        v_ge = solve(df, ge=True).iloc[0]
+        v_na = solve(df, keep_na=True).iloc[0]
+        ok = g.iloc[0] - g.iloc[1] > 0.5 and not near_half(v, 1, 0.1)
+        ok &= round(v_ge, 1) != round(v, 1) and round(v_na, 1) != round(v, 1)
+        return ok, [fmt(v, 1)], {'g': g.round(3).to_dict(), 'ge': v_ge, 'keep_na': v_na}
+
+    statement = (
+        "제공된 데이터(t1_2.csv)는 어느 캠핑 장비 대여점의 2025년 4~9월 대여 기록이다. 한 행이 대여 한 건이며, "
+        "아직 반납되지 않은 대여는 return_date가 비어 있다.\n\n"
+        + table([('rental_id', '대여 ID'), ('rent_date', '대여일 (YYYY-MM-DD)'), ('item', '대여 장비'),
+                 ('booked_days', '예약한 대여 일수(일)'), ('return_date', '실제 반납일 (YYYY-MM-DD)'), ('deposit', '보증금(원)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) return_date가 비어 있는 대여는 분석에서 제외한다.\n"
+        "- 2) 반납 예정일 = rent_date로부터 booked_days일 뒤의 날짜 로 둔다(예: 2025-05-02에 2일 예약하면 2025-05-04).\n"
+        "- 3) return_date가 반납 예정일보다 늦은 대여를 연체로 본다.\n"
+        "- 4) rent_date의 요일별로 연체율(%) = 연체 건수 / 대여 건수 × 100 을 구한다.\n\n"
+        "연체율이 가장 높은 요일의 연체율(%)을 구하시오.\n\n"
+        "【제출 형식】 반올림하여 소수 첫째 자리까지 (예: 12.3)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_2.csv')\n"
+        "df = df.dropna(subset=['return_date']).copy()\n"
+        "df['rent_date'] = pd.to_datetime(df['rent_date'])\n"
+        "df['return_date'] = pd.to_datetime(df['return_date'])\n"
+        "df['due'] = df['rent_date'] + pd.to_timedelta(df['booked_days'], unit='D')\n"
+        "df['late'] = df['return_date'] > df['due']\n"
+        "rate = df.groupby(df['rent_date'].dt.dayofweek)['late'].mean() * 100\n"
+        "print(round(rate.max(), 1))\n"
+    )
+    explain = (
+        "날짜에 일수 칼럼을 더할 때는 pd.to_timedelta(칼럼, unit='D')로 바꿔 더한다. 반납 예정일 당일 반납이 많아서 > 대신 >= 를 쓰면 연체율이 크게 오른다.\n\n"
+        "반납일이 빈 대여를 지우지 않으면 NaT와의 비교가 False가 되어 '연체 아님'으로 분모에만 들어가고 연체율이 낮아진다. "
+        "불리언의 평균이 비율이므로 groupby(요일).mean()에 100을 곱한다. 요일 이름은 묻지 않으니 dt.dayofweek 숫자로 묶어도 된다."
+    )
+    return dict(make=make, check=check, title='캠핑 장비 대여일 요일별 최고 연체율',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('답', '반올림하여 소수 첫째 자리까지', None)])
+
+
+# ---------------------------------------------------------------- m6-1-3
+@problem
+def m6_3():
+    varieties = ['부사', '홍로', '시나노골드']
+    wmu = [292, 268, 279]
+    bmu = [14.6, 13.4, 14.1]
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        n = 640
+        vi = rng.choice(3, n, p=[.5, .28, .22])
+        w = np.array(wmu)[vi] + rng.normal(0, 30, n)
+        brix = np.round(np.array(bmu)[vi] + 0.014 * (w - 280) + rng.normal(0, 0.9, n), 1)
+        w = np.round(w, 1)
+        idx = rng.choice(n, 11, replace=False)
+        w[idx[:7]] = np.round(w[idx[:7]] * 10, 1)       # 단위 입력 실수
+        w[idx[7:]] = np.round(w[idx[7:]] / 10, 1)
+        w = w.astype(float)
+        na = rng.choice(np.setdiff1d(np.arange(n), idx), 38, replace=False)
+        w[na] = np.nan
+        return pd.DataFrame({'sample_id': [f'AP{i:04d}' for i in range(1, n + 1)],
+                             'orchard': rng.choice(['가', '나', '다', '라', '마', '바'], n),
+                             'variety': np.array(varieties)[vi], 'weight_g': w, 'brix': brix,
+                             'firmness': np.round(rng.normal(6.2, 0.7, n), 2)})
+
+    def solve(df, order='fill_first', clip=True):
+        w = df['weight_g'].copy()
+        if order == 'fill_first':
+            w = w.fillna(w.median())
+            if clip:
+                w = w.clip(w.quantile(0.05), w.quantile(0.95))
+        else:
+            w = w.clip(w.quantile(0.05), w.quantile(0.95))
+            w = w.fillna(df['weight_g'].median())
+        b = df['brix']
+        s = (w - w.mean()) / w.std() + (b - b.mean()) / b.std()
+        return w.mean(), s, int((s > 2).sum())
+
+    def check(df):
+        m, s, cnt = solve(df)
+        m2, _, _ = solve(df, 'clip_first')
+        _, _, cnt0 = solve(df, clip=False)
+        ok = (not near_half(m, 2, 0.1)) and round(m2, 2) != round(m, 2) and cnt0 != cnt and (s - 2).abs().min() > 0.01
+        return ok, [fmt(m, 2), str(cnt)], {'mean': m, 'clip_first': m2, 'cnt': cnt, 'no_clip': cnt0,
+                                           'margin': (s - 2).abs().min()}
+
+    statement = (
+        "제공된 데이터(t1_3.csv)는 어느 지역 사과 농가 6곳에서 수확 직후 뽑은 표본 사과의 품질 측정 자료이다. "
+        "weight_g에 결측치가 있고, 단위를 잘못 입력한 값이 섞여 있다. 잘못 입력된 값을 따로 고치지 않고 아래 순서대로만 처리한다.\n\n"
+        + table([('sample_id', '표본 ID'), ('orchard', '농가'), ('variety', '품종'), ('weight_g', '무게(g)'),
+                 ('brix', '당도(°Bx)'), ('firmness', '경도(kgf)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) weight_g의 결측치를 weight_g 전체의 중앙값으로 채운다. 중앙값은 결측치를 제외하고 구한다.\n"
+        "- 2) 결측치를 채운 weight_g의 5번째 백분위수(P5)와 95번째 백분위수(P95)를 구한다. 백분위수는 선형 보간법으로 구한다.\n"
+        "- 3) weight_g가 P5보다 작으면 P5로, P95보다 크면 P95로 바꾼다.\n\n"
+        "① 3)까지 처리한 weight_g의 평균을 구하시오.\n\n"
+        "② 3)까지 처리한 weight_g와 brix를 각각 표준화한다. 표준화 값 = (x − 평균) / 표준편차 이고, 표준편차는 표본표준편차(n−1로 나눔)이다. "
+        "품질 점수 = (weight_g의 표준화 값) + (brix의 표준화 값) 이 2보다 큰 표본의 수를 구하시오.\n\n"
+        "【제출 형식】 ① 반올림하여 소수 둘째 자리까지 ② 정수(표본 수)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_3.csv')\n"
+        "df['weight_g'] = df['weight_g'].fillna(df['weight_g'].median())\n"
+        "p5 = df['weight_g'].quantile(0.05)\n"
+        "p95 = df['weight_g'].quantile(0.95)\n"
+        "df['weight_g'] = df['weight_g'].clip(p5, p95)\n"
+        "print(round(df['weight_g'].mean(), 2))\n"
+        "zw = (df['weight_g'] - df['weight_g'].mean()) / df['weight_g'].std()\n"
+        "zb = (df['brix'] - df['brix'].mean()) / df['brix'].std()\n"
+        "print(((zw + zb) > 2).sum())\n"
+    )
+    explain = (
+        "이상치를 지우지 않고 경계값으로 바꾸는 방식(윈저화)이다. Series.clip(하한, 상한)이 그대로 해 준다. "
+        "백분위수는 결측을 채운 뒤의 값으로 잡는다. 순서를 바꿔 결측이 있는 채로 백분위수를 구하면 경계가 달라져 ①의 둘째 자리가 바뀐다.\n\n"
+        "②의 표준화는 3)까지 처리한 무게로 한다. 경계값으로 바꾸기 전 무게를 쓰면 2900g대 입력 오류가 평균과 표준편차를 끌어당겨 개수가 달라진다. "
+        "StandardScaler는 ddof=0이라 지문(표본표준편차)과 다르니 pandas의 std()로 직접 계산한다."
+    )
+    return dict(make=make, check=check, title='사과 무게 백분위 경계 대체 후 평균과 품질 점수 상위 표본 수',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('①', '반올림하여 소수 둘째 자리까지', None), ('②', '정수(표본 수)', None)])
+
+
+# ---------------------------------------------------------------- m7-1-1
+@problem
+def m7_1():
+    branches = ['김포공항점', '부산역점', '강릉역점', '여수점', '광주송정점', '청주공항점', '대구역점']
+    km_mu = [82, 96, 124, 113, 77, 91, 86]
+    classes = ['경형', '준중형', '중형', 'SUV', '대형']
+    rate = [39000, 52000, 64000, 79000, 95000]
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        n = 1120
+        bi = rng.integers(0, 7, n)
+        ci = rng.choice(5, n, p=[.2, .26, .24, .18, .12])
+        days = rng.choice(np.arange(1, 9), n, p=[.22, .24, .18, .12, .1, .06, .05, .03])
+        km_out = rng.integers(8000, 96000, n)
+        drive = np.maximum(5, np.round(days * np.array(km_mu)[bi] * rng.lognormal(0, 0.45, n))).astype(int)
+        r = np.array(rate)[ci]
+        fee = np.where(days >= 5, np.round(days * r * 0.9), days * r)
+        coupon = rng.random(n) < 0.15
+        fee = (fee - np.where(coupon, 5000, 0)).astype(int)
+        df = pd.DataFrame({'branch': np.array(branches)[bi], 'car_class': np.array(classes)[ci], 'days': days,
+                           'km_out': km_out, 'km_in': km_out + drive, 'fee': fee})
+        df = df.sample(frac=1, random_state=seed).reset_index(drop=True)
+        df.insert(0, 'rental_id', [f'RC{i:05d}' for i in range(1, n + 1)])
+        return df
+
+    def solve(df, tie_asc=True):
+        d = df.copy()
+        d['dist'] = d['km_in'] - d['km_out']
+        d['dpd'] = d['dist'] / d['days']
+        bm = d.groupby('branch')['dpd'].mean()
+        keep = bm[bm > d['dpd'].mean()].index
+        s = d[d['branch'].isin(keep)].copy()
+        s['daily'] = s['fee'] / s['days']
+        s = s.sort_values(['daily', 'rental_id'], ascending=[False, tie_asc])
+        return d, bm, keep, s
+
+    def check(df):
+        d, bm, keep, s = solve(df)
+        _, _, _, sr = solve(df, False)
+        ans = int(s.iloc[9]['dist'])
+        margin = (bm - d['dpd'].mean()).abs().min()
+        alt = bm[bm > bm.mean()].index  # 지점 평균들의 평균을 기준으로 잡는 실수
+        ok = margin > 1.0 and 2 <= len(keep) <= 5 and s['daily'].iloc[9] == s['daily'].iloc[0]
+        ok &= int(sr.iloc[9]['dist']) != ans
+        return ok, [str(ans)], {'bm': bm.round(2).to_dict(), 'overall': round(d['dpd'].mean(), 3), 'keep': list(keep),
+                                'alt_keep_same': set(alt) == set(keep), 'ties': int((s['daily'] == s['daily'].iloc[0]).sum())}
+
+    statement = (
+        "제공된 데이터(t1_1.csv)는 어느 렌터카 회사 7개 지점의 대여 기록이다. 한 행이 대여 한 건이다.\n\n"
+        + table([('rental_id', '대여 ID'), ('branch', '대여 지점'), ('car_class', '차급'), ('days', '대여 일수(일)'),
+                 ('km_out', '출고 시 누적 주행거리 계기값(km)'), ('km_in', '반납 시 누적 주행거리 계기값(km)'), ('fee', '대여 요금(원)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) 대여마다 주행거리 = km_in − km_out, 일평균 주행거리 = 주행거리 / days 를 계산한다.\n"
+        "- 2) branch별 일평균 주행거리의 평균을 구한다. 이 값이 전체 대여(1,120건)의 일평균 주행거리 평균보다 큰 branch의 대여만 남긴다.\n"
+        "- 3) 남은 대여마다 일 요금 = fee / days 를 계산하고, 일 요금이 높은 순으로 정렬한다. 일 요금이 같으면 rental_id 오름차순으로 둔다.\n\n"
+        "정렬 결과 10번째 대여의 주행거리(km)를 구하시오.\n\n"
+        "【제출 형식】 정수(km)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_1.csv')\n"
+        "df['dist'] = df['km_in'] - df['km_out']\n"
+        "df['dpd'] = df['dist'] / df['days']\n"
+        "bm = df.groupby('branch')['dpd'].mean()\n"
+        "keep = bm[bm > df['dpd'].mean()].index\n"
+        "d = df[df['branch'].isin(keep)].copy()\n"
+        "d['daily'] = d['fee'] / d['days']\n"
+        "d = d.sort_values(['daily', 'rental_id'], ascending=[False, True])\n"
+        "print(d.iloc[9]['dist'])\n"
+    )
+    explain = (
+        "km_in과 km_out은 계기판 누적값이라 그대로 쓰면 안 되고 빼서 주행거리를 만든다. 지점 선택 기준은 행 전체의 평균(df['dpd'].mean())이다. "
+        "groupby 결과에서 bm[bm > 기준].index로 지점 이름을 얻고 isin으로 대여를 거른다.\n\n"
+        "요금표가 차급별 일 단가라 할인·쿠폰이 없는 대형차 대여는 일 요금이 모두 95000원으로 같고, 이들이 상위를 채운다. "
+        "그래서 10번째는 rental_id 오름차순 규칙으로 정해진다. rental_id까지 내림차순으로 정렬하면 다른 대여가 나온다. "
+        "fee 그대로(총 요금) 정렬해도 순서가 완전히 달라진다."
+    )
+    return dict(make=make, check=check, title='주행 많은 지점 대여의 일 요금 10위 주행거리',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('답', '정수(km)', None)])
+
+
+# ---------------------------------------------------------------- m7-1-2
+@problem
+def m7_2():
+    menus = ['소금빵', '마늘소금빵', '크루아상', '초코크루아상', '식빵', '단팥빵', '베이글', '바게트']
+    price = [3200, 3800, 3900, 4500, 5200, 2600, 3400, 4800]
+    appear = [.125, .08, .2, .09, .13, .14, .125, .11]
+    qty_p = {0: [.2, .35, .3, .15]}
+    other = [.6, .3, .1, 0]
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        n = 1060
+        items, paid = [], []
+        for _ in range(n):
+            k = int(rng.choice([1, 2, 3, 4], p=[.33, .36, .21, .10]))
+            ms = rng.choice(len(menus), k, replace=False, p=appear)
+            parts, tot = [], 0
+            for m in ms:
+                q = int(rng.choice([1, 2, 3, 4], p=qty_p.get(m, other)))
+                parts.append(f'{menus[m]}*{q}')
+                tot += q * price[m]
+            sep = ' / ' if rng.random() < 0.22 else '/'
+            items.append(sep.join(parts))
+            paid.append(tot)
+        df = pd.DataFrame({'order_id': [f'OD{i:05d}' for i in range(1, n + 1)],
+                           'channel': rng.choice(['매장', '앱', '배달'], n, p=[.5, .3, .2]),
+                           'items': items, 'paid': paid})
+        return df
+
+    def parse(df, strip=True):
+        rows = df[['order_id', 'channel']].assign(item=df['items'].str.split('/')).explode('item')
+        it = rows['item'].str.strip() if strip else rows['item']
+        rows['menu'] = it.str.split('*').str[0]
+        rows['qty'] = it.str.split('*').str[1].astype(int)
+        return rows
+
+    def check(df):
+        rows = parse(df)
+        tot = rows.groupby('order_id')['qty'].sum()
+        app = df.loc[df['channel'] == '앱', 'order_id']
+        v = tot[app].mean()
+        kinds = rows.groupby('order_id').size()[app].mean()
+        q = rows.groupby('menu')['qty'].sum().sort_values(ascending=False)
+        cnt = rows['menu'].value_counts()
+        q_ns = parse(df, strip=False).groupby('menu')['qty'].sum().sort_values(ascending=False)
+        ok = (not near_half(v, 3, 0.08)) and q.iloc[0] - q.iloc[1] >= 5 and cnt.index[0] != q.index[0] \
+            and q_ns.index[0] != q.index[0] and round(kinds, 3) != round(v, 3)
+        return ok, [fmt(v, 3), q.index[0]], {'app_mean': v, 'q': q.head(4).to_dict(), 'count_top': cnt.index[0],
+                                            'nostrip_top': q_ns.index[0]}
+
+    statement = (
+        "제공된 데이터(t1_2.csv)는 어느 베이커리의 주문 기록이다. 한 행이 주문 한 건이다. "
+        "items는 '메뉴*수량' 형식의 항목을 '/'로 이어 쓴 문자열이며(예: 소금빵*2/식빵*1), 일부 주문은 '/' 앞뒤에 공백이 있다.\n\n"
+        + table([('order_id', '주문 ID'), ('channel', '주문 경로(매장/앱/배달)'), ('items', '주문 메뉴와 수량'),
+                 ('paid', '결제 금액(원)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) items를 항목 단위로 나누고, 항목마다 메뉴 이름과 수량을 구한다. 항목 앞뒤의 공백은 무시한다.\n"
+        "- 2) 주문마다 총 수량 = 그 주문 항목들의 수량 합 을 구한다(예: 소금빵*2/식빵*1 이면 3).\n\n"
+        "① channel이 앱인 주문의 총 수량 평균을 구하시오.\n\n"
+        "② 전체 주문에서 메뉴별 수량 합계를 구했을 때 합계가 가장 큰 메뉴 이름을 구하시오.\n\n"
+        "【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 메뉴 이름 그대로 (예: 식빵)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_2.csv')\n"
+        "rows = df.assign(item=df['items'].str.split('/')).explode('item')\n"
+        "rows['item'] = rows['item'].str.strip()\n"
+        "rows['menu'] = rows['item'].str.split('*').str[0]\n"
+        "rows['qty'] = rows['item'].str.split('*').str[1].astype(int)\n"
+        "tot = rows.groupby('order_id')['qty'].sum()\n"
+        "app = df.loc[df['channel'] == '앱', 'order_id']\n"
+        "print(round(tot[app].mean(), 3))\n"
+        "print(rows.groupby('menu')['qty'].sum().idxmax())\n"
+    )
+    explain = (
+        "str.split('/')로 리스트를 만든 뒤 explode로 항목 하나를 한 행으로 펼치면 groupby로 합치기 쉽다. "
+        "주문마다 sum(int(x.split('*')[1]) for x in s.split('/'))를 apply로 계산해도 된다.\n\n"
+        "공백을 strip하지 않으면 ' 크루아상'처럼 앞에 공백이 붙은 이름이 따로 묶여 메뉴별 합계가 쪼개지고 ②의 1위가 바뀐다. "
+        "②는 수량 합계다. 메뉴가 등장한 주문 수(value_counts)로 세면 1개씩 자주 사는 메뉴가 1위가 되어 답이 다르다. "
+        "①은 항목 수(메뉴 종류 수)가 아니라 수량 합의 평균이다."
+    )
+    return dict(make=make, check=check, title='베이커리 앱 주문 평균 수량과 최다 판매 메뉴',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('①', '반올림하여 소수 셋째 자리까지', None), ('②', '메뉴 이름 그대로', None)])
+
+
+# ---------------------------------------------------------------- m7-1-3
+@problem
+def m7_3():
+    stations = ['중앙로주유소', '시청앞주유소', '북부순환주유소', '남부IC주유소', '공단주유소', '터미널주유소', '신도시주유소', '강변주유소']
+    base = [1688, 1712, 1655, 1739, 1642, 1701, 1726, 1669]
+
+    def make(seed):
+        rng = np.random.default_rng(seed)
+        dates = pd.date_range('2025-06-01', periods=120, freq='D')
+        trend = np.cumsum(rng.normal(0, 3.2, 120))
+        rows = []
+        for s, b in zip(stations, base):
+            own = np.cumsum(rng.normal(0, 2.2, 120))
+            g = np.round(b + trend + own).astype(float)
+            dsl = np.round(g - rng.integers(95, 125) + rng.normal(0, 3, 120))
+            sp = rng.choice(np.arange(5, 120), 1, replace=False)
+            g[sp] = g[sp] + rng.choice([-1, 1]) * rng.integers(90, 140)  # 입력 오류
+            na = rng.choice(np.arange(1, 120), int(rng.integers(6, 12)), replace=False)
+            g[na] = np.nan
+            for i in range(120):
+                rows.append((dates[i].strftime('%Y-%m-%d'), s, g[i], int(dsl[i])))
+        df = pd.DataFrame(rows, columns=['date', 'station', 'gasoline', 'diesel'])
+        return df.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+    def fill(df, mode='ok'):
+        if mode == 'ok':
+            d = df.sort_values(['station', 'date']).copy()
+            d['gasoline'] = d.groupby('station')['gasoline'].ffill()
+        elif mode == 'nosort':
+            d = df.copy()
+            d['gasoline'] = d.groupby('station')['gasoline'].ffill()
+        else:  # 날짜로만 정렬하고 station을 가리지 않음
+            d = df.sort_values(['date', 'station']).copy()
+            d['gasoline'] = d['gasoline'].ffill()
+        return d
+
+    def robust(d, by_station=True):
+        if by_station:
+            g = d.groupby('station')['gasoline']
+            med, q1, q3 = g.transform('median'), g.transform(lambda x: x.quantile(0.25)), g.transform(lambda x: x.quantile(0.75))
+        else:
+            x = d['gasoline']
+            med, q1, q3 = x.median(), x.quantile(0.25), x.quantile(0.75)
+        return (d['gasoline'] - med) / (q3 - q1)
+
+    def check(df):
+        d = fill(df)
+        if d['gasoline'].isna().any():
+            return False, [], {}
+        gm = d.groupby('station')['gasoline'].mean()
+        v = gm.max()
+        alt = {m: fill(df, m).groupby('station')['gasoline'].mean().max() for m in ('nosort', 'nogroup')}
+        r = robust(d)
+        cnt = int((r.abs() > 1.5).sum())
+        cnt_g = int((robust(d, False).abs() > 1.5).sum())
+        margin = (r.abs() - 1.5).abs().min()
+        ok = (not near_half(v, 1, 0.1)) and all(round(a, 1) != round(v, 1) for a in alt.values())
+        ok &= margin > 0.003 and cnt_g != cnt and gm.sort_values().iloc[-1] - gm.sort_values().iloc[-2] > 0.5
+        return ok, [fmt(v, 1), str(cnt)], {'gm': gm.round(2).to_dict(), 'alt': alt, 'cnt_global': cnt_g, 'margin': margin}
+
+    statement = (
+        "제공된 데이터(t1_3.csv)는 어느 시의 주유소 8곳의 2025년 6월 1일부터 120일간 일별 판매 가격 기록이다. "
+        "gasoline에 결측치가 있다. 각 주유소의 첫 날(2025-06-01) gasoline 값은 결측이 아니다.\n\n"
+        + table([('date', '날짜 (YYYY-MM-DD)'), ('station', '주유소'), ('gasoline', '휘발유 판매가(원/L)'),
+                 ('diesel', '경유 판매가(원/L)')])
+        + "\n\n아래 수행 순서에 따라 데이터를 처리한 후, 구한 답을 소문항별로 【제출 형식】에 맞춰 입력하시오.\n\n"
+        "- 1) gasoline의 결측치를 같은 station의 바로 앞 날짜 gasoline 값으로 채운다. 바로 앞 날짜도 결측이면 그보다 앞선 날짜 중 가장 가까운 날짜의 값으로 채운다.\n"
+        "- 2) 1)까지 처리한 데이터로 station별 gasoline 평균을 구한다.\n\n"
+        "① station별 gasoline 평균 가운데 가장 큰 값을 구하시오.\n\n"
+        "② 1)까지 처리한 데이터에서 station마다 gasoline의 중앙값, 1사분위수(Q1), 3사분위수(Q3)를 구하고(분위수는 선형 보간법), "
+        "변환값 = (gasoline − 그 station의 중앙값) / (그 station의 Q3 − Q1) 을 계산한다. 변환값의 절댓값이 1.5보다 큰 행의 수를 구하시오.\n\n"
+        "【제출 형식】 ① 반올림하여 소수 첫째 자리까지 ② 정수(행 수)"
+    )
+    solution = (
+        "import pandas as pd\n"
+        "df = pd.read_csv('data/t1_3.csv')\n"
+        "df = df.sort_values(['station', 'date'])\n"
+        "df['gasoline'] = df.groupby('station')['gasoline'].ffill()\n"
+        "print(round(df.groupby('station')['gasoline'].mean().max(), 1))\n"
+        "g = df.groupby('station')['gasoline']\n"
+        "med = g.transform('median')\n"
+        "iqr = g.transform(lambda x: x.quantile(0.75)) - g.transform(lambda x: x.quantile(0.25))\n"
+        "r = (df['gasoline'] - med) / iqr\n"
+        "print((r.abs() > 1.5).sum())\n"
+    )
+    explain = (
+        "'바로 앞 날짜 값으로 채우기'는 ffill이다. 행이 섞여 있으니 먼저 station과 date로 정렬하고(ISO 날짜 문자열은 문자열 정렬이 곧 날짜 정렬이다), "
+        "groupby('station')['gasoline'].ffill()로 주유소 안에서만 채운다. 정렬하지 않으면 엉뚱한 날짜 값이 들어가고, "
+        "날짜로만 정렬해 전체에 ffill하면 같은 날 다른 주유소의 가격이 들어와 ①이 달라진다.\n\n"
+        "②는 중앙값과 IQR로 나누는 로버스트 스케일링이다. transform으로 주유소별 값을 행 자리에 놓고 계산한다. "
+        "주유소를 가리지 않고 전체 중앙값·IQR로 변환하면 가격 수준이 다른 주유소가 통째로 바깥으로 밀려 개수가 크게 달라진다."
+    )
+    return dict(make=make, check=check, title='주유소별 결측 앞값 채우기 후 평균 최댓값과 로버스트 이상치 수',
+                statement=statement, solution=solution, explain=explain,
+                answers=[('①', '반올림하여 소수 첫째 자리까지', None), ('②', '정수(행 수)', None)])
+
+
 # ---------------------------------------------------------------- main
 ORDER = [('m1', 1), ('m1', 2), ('m1', 3), ('m2', 1), ('m2', 2), ('m2', 3), ('m3', 1), ('m3', 2), ('m3', 3),
-         ('m4', 1), ('m4', 2), ('m4', 3), ('m5', 1), ('m5', 2), ('m5', 3)]
+         ('m4', 1), ('m4', 2), ('m4', 3), ('m5', 1), ('m5', 2), ('m5', 3),
+         ('m6', 1), ('m6', 2), ('m6', 3), ('m7', 1), ('m7', 2), ('m7', 3)]
 
 
 def main():

@@ -1,4 +1,4 @@
-"""작업형3 실습 문제 10개 생성기. 시험 버전 파이썬(examenv)으로 실행한다.
+"""작업형3 실습 문제 14개 생성기 (모의고사 1~7회, 회마다 3-1·3-2). 시험 버전 파이썬(examenv)으로 실행한다.
 
 각 문제: gen(rng) -> DataFrame, solution 코드(a1,a2,a3 계산 후 print), 조건 검사.
 시드를 0부터 올려 조건(반올림 경계 회피, 판정 여유 등)을 만족하는 첫 데이터를 쓴다.
@@ -789,6 +789,346 @@ print(a3)
     explain="""결측이 남아 있으면 `f_oneway`가 nan을 돌려준다. 결측 행을 먼저 지운다. 전체 평균으로 채우면 빈 자리가 모두 같은 값이 되어 집단 평균과 분산이 바뀌고 F가 달라진다.
 statsmodels로는 `anova_lm(smf.ols('picks_per_hour ~ C(method)', data=df).fit())`의 F, PR(>F) 열이 같은 값이다.
 p-value가 0.05보다 작으므로 기각한다. 적어도 한 방식의 평균 처리량이 다르다는 뜻이며, 어느 방식끼리 다른지는 사후검정(예: Tukey HSD)으로 따로 본다.""",
+))
+
+
+# ---------------------------------------------------------------- m6-3-1 OLS + 교호작용항 + 예측
+M6_1_FORMULA = "copies ~ ad_budget + series + ad_budget:series + price + pages"
+
+
+def gen_m6_1(rng):
+    n = 180
+    ad = np.round(rng.uniform(2, 30, n), 1)
+    series = (rng.random(n) < 0.4).astype(int)
+    price = rng.choice(np.arange(13000, 22100, 100), n)
+    pages = rng.integers(180, 561, n)
+    copies = (900 + 95 * ad + 650 * series + 70 * ad * series - 0.06 * price
+              + 0.9 * pages + rng.normal(0, 520, n))
+    return pd.DataFrame({
+        "book_id": [f"B{i:04d}" for i in range(1, n + 1)],
+        "ad_budget": ad, "series": series, "price": price, "pages": pages,
+        "copies": np.round(copies).astype(int),
+    })
+
+
+def chk_m6_1(ns, df):
+    import statsmodels.formula.api as smf
+    m = smf.ols(M6_1_FORMULA, data=df).fit()
+    if not m.pvalues["ad_budget:series"] < 0.005:
+        return False
+    if not (0.005 < ns["a2"] < 0.2 and abs(ns["a2"] - 0.05) > 0.01):
+        return False
+    # 교호작용항을 빼고 적합하면 예측값이 달라져야 함정이 산다
+    m0 = smf.ols("copies ~ ad_budget + series + price + pages", data=df).fit()
+    new = pd.DataFrame({"ad_budget": [24.0], "series": [1], "price": [16800], "pages": [320]})
+    return abs(m0.predict(new).iloc[0] - ns["a3"]) > 30
+
+
+P.append(dict(
+    id="m6-3-1", set="m6", no="3-1", file="t3_1.csv", gen=gen_m6_1, chk=chk_m6_1,
+    title="신간 도서 판매량 회귀 — 교호작용항 계수, p-value, 예측",
+    statement="""어느 출판사가 최근 2년 동안 낸 신간 180종의 출간 후 3개월 판매 부수와 도서 정보를 정리했다. 데이터 `t3_1.csv`의 칼럼은 다음과 같다.
+
+| 칼럼 | 설명 |
+|---|---|
+| book_id | 도서 ID |
+| ad_budget | 출간 후 3개월 광고비(백만 원) |
+| series | 시리즈 후속권 여부 (1 후속권, 0 단권) |
+| price | 정가(원) |
+| pages | 쪽수 |
+| copies | 출간 후 3개월 판매 부수 |
+
+copies를 종속변수로 하는 다중선형회귀 모형을 전체 데이터로 적합하시오. 독립변수는 ad_budget, series, price, pages와 교호작용항 ad_budget × series(두 변수의 곱) 5개 항이다.
+
+- 모형은 절편항을 포함한다. 독립변수는 위 교호작용항 외에는 변환하지 않고 원래 값 그대로 쓴다.
+- 각 회귀계수의 유의성은 양측 t-검정으로 판단하며, 유의수준은 0.05이다.
+
+① 교호작용항 ad_budget × series의 회귀계수를 구하시오.
+
+② pages 회귀계수의 p-value를 구하시오.
+
+③ ad_budget이 24.0, series가 1, price가 16800, pages가 320인 도서의 판매 부수 예측값을 구하시오.
+
+【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 반올림하여 소수 둘째 자리까지""",
+    formats=[F3, F4, F2],
+    solution="""import pandas as pd
+import statsmodels.formula.api as smf
+
+df = pd.read_csv('data/t3_1.csv')
+model = smf.ols('copies ~ ad_budget + series + ad_budget:series + price + pages', data=df).fit()
+# 'copies ~ ad_budget * series + price + pages' 로 써도 같은 모형이다
+
+a1 = model.params['ad_budget:series']
+a2 = model.pvalues['pages']
+
+new = pd.DataFrame({'ad_budget': [24.0], 'series': [1], 'price': [16800], 'pages': [320]})
+a3 = model.predict(new).iloc[0]
+
+print(round(a1, 3))
+print(round(a2, 4))
+print(round(a3, 2))
+""",
+    explain="""formula에서 `a:b`는 곱 항 하나만, `a*b`는 `a + b + a:b`를 뜻한다. 주효과(ad_budget, series)를 빼고 `a:b`만 넣으면 다른 모형이 된다. 계수 이름은 `model.params.index`로 확인한다(`ad_budget:series`).
+교호작용이 있으면 광고비 1백만 원의 효과가 단권은 ad_budget 계수, 후속권은 ad_budget 계수 + 교호작용 계수로 갈린다.
+③은 새 행을 원래 칼럼 이름으로 만들어 `predict`에 넣으면 formula가 곱 항까지 계산해 준다. 교호작용항을 빼고 적합한 모형으로 예측하면 값이 크게 달라진다.
+곱 칼럼을 직접 만들어(`df['ad_x_series'] = df['ad_budget'] * df['series']`) 넣어도 계수는 같지만, 그때는 새 행에도 같은 칼럼을 만들어야 한다.""",
+))
+
+
+# ---------------------------------------------------------------- m6-3-2 Levene(평균 중심) + Welch t
+def gen_m6_2(rng):
+    na, nb = 34, 58
+    a = rng.normal(27.6, 3.9, na)
+    b = rng.normal(26.1, 2.1, nb)
+    vendor = np.array(["A"] * na + ["B"] * nb)
+    mpa = np.round(np.concatenate([a, b]), 1)
+    idx = rng.permutation(na + nb)
+    return pd.DataFrame({
+        "specimen_id": [f"C{i:03d}" for i in range(1, na + nb + 1)],
+        "vendor": vendor[idx], "strength": mpa[idx],
+        "slump_mm": rng.integers(80, 181, na + nb),
+    })
+
+
+def chk_m6_2(ns, df):
+    a = df.loc[df.vendor == "A", "strength"]
+    b = df.loc[df.vendor == "B", "strength"]
+    lev_mean = stats.levene(a, b, center="mean")
+    if abs(lev_mean.statistic - ns["a1"]) > 1e-9 or not lev_mean.pvalue < 0.03:
+        return False
+    # 기본값(중앙값 중심)으로 구하면 ①이 달라져야 한다
+    if round(stats.levene(a, b).statistic, 3) == round(ns["a1"], 3):
+        return False
+    w = stats.ttest_ind(a, b, equal_var=False)
+    if abs(w.statistic - ns["a2"]) > 1e-9 or abs(w.pvalue - ns["a3"]) > 1e-12:
+        return False
+    # 등분산 가정(합동분산)으로 풀면 판정이 뒤집혀야 함정이 산다
+    pooled = stats.ttest_ind(a, b, equal_var=True).pvalue
+    return 0.06 < ns["a3"] < 0.12 and pooled < 0.045
+
+
+P.append(dict(
+    id="m6-3-2", set="m6", no="3-2", file="t3_2.csv", gen=gen_m6_2, chk=chk_m6_2,
+    title="두 레미콘 업체 압축강도 — 평균 중심 등분산 검정과 이분산 독립표본 t검정",
+    statement="""어느 건설사가 두 레미콘 업체(A, B)에서 납품받은 콘크리트로 공시체를 만들어 28일 압축강도를 시험했다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.
+
+| 칼럼 | 설명 |
+|---|---|
+| specimen_id | 공시체 ID |
+| vendor | 레미콘 업체 (A 또는 B) |
+| strength | 28일 압축강도(MPa) |
+| slump_mm | 슬럼프(mm) |
+
+두 업체의 strength는 각각 정규분포를 따르고 서로 독립이라고 가정한다. 유의수준은 0.05이다.
+
+① 각 공시체의 strength에서 그 공시체가 속한 업체의 strength 표본평균을 뺀 값의 절댓값을 z라 하자. z를 반응값으로 하여 두 업체의 z 모평균이 같은지 일원분산분석을 할 때의 F 통계량(두 업체의 모분산이 같은지 보는 등분산 검정 통계량)을 구하시오.
+
+② 두 업체의 모분산이 같다고 가정하지 않고, 두 업체의 strength 모평균이 같다는 귀무가설을 독립표본 t-검정으로 검정할 때의 검정통계량 t를 구하시오. t는 (A의 표본평균 − B의 표본평균)을 분자로 한다.
+
+③ ②의 검정에서 대립가설이 "두 모평균이 다르다"일 때(양측 검정) p-value를 구하시오.
+
+【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지""",
+    formats=[F3, F3, F4],
+    solution="""import pandas as pd
+from scipy import stats
+
+df = pd.read_csv('data/t3_2.csv')
+a = df.loc[df['vendor'] == 'A', 'strength']
+b = df.loc[df['vendor'] == 'B', 'strength']
+
+a1 = stats.levene(a, b, center='mean').statistic
+# 정의대로: z = |x - 집단 평균| 에 일원분산분석
+# df['z'] = (df['strength'] - df.groupby('vendor')['strength'].transform('mean')).abs()
+# stats.f_oneway(*[g['z'] for _, g in df.groupby('vendor')]).statistic 과 같다
+
+res = stats.ttest_ind(a, b, equal_var=False)
+a2 = res.statistic
+a3 = res.pvalue
+
+print(round(a1, 3))
+print(round(a2, 3))
+print(round(a3, 4))
+""",
+    explain="""①은 Levene 검정의 원래 정의(집단 평균 중심)다. `stats.levene`의 기본값은 `center='median'`(Brown-Forsythe 변형)이라 그대로 쓰면 값이 달라진다. `center='mean'`을 주거나, 정의대로 z를 만들어 `f_oneway`에 넣는다.
+①의 p-value가 0.05보다 작아 등분산 가정이 맞지 않으므로 ②③은 Welch t-검정이다. `ttest_ind`의 기본값은 `equal_var=True`(합동분산)이고, 이 데이터에서 그대로 쓰면 p-value가 0.05보다 작아져 결론이 뒤집힌다.
+Welch t = (x̄A − x̄B) / sqrt(sA²/nA + sB²/nB)이고 자유도는 Welch–Satterthwaite 근사(정수가 아니다)를 쓴다. 분산이 큰 쪽(A)의 표본이 작을수록 합동분산이 A의 분산을 과소평가해 두 방법의 차이가 커진다.""",
+))
+
+
+# ---------------------------------------------------------------- m7-3-1 logit + k단위 오즈비 + p값 + 임계값 FP
+M7_1_FORMULA = "subscribed ~ trial_orders + delay_min + rating + coupon + household"
+
+
+def gen_m7_1(rng):
+    n = 300
+    orders = rng.integers(1, 9, n)
+    delay = np.round(rng.uniform(0, 60, n), 1)
+    rating = np.round(rng.uniform(3.0, 5.0, n), 1)
+    coupon = (rng.random(n) < 0.35).astype(int)
+    house = rng.integers(1, 6, n)
+    eta = -4.6 + 0.38 * orders - 0.035 * delay + 0.75 * rating + 0.6 * coupon + 0.12 * house
+    y = (rng.random(n) < sigmoid(eta)).astype(int)
+    return pd.DataFrame({
+        "customer_id": [f"K{i:04d}" for i in range(1, n + 1)],
+        "trial_orders": orders, "delay_min": delay, "rating": rating,
+        "coupon": coupon, "household": house, "subscribed": y,
+    })
+
+
+def chk_m7_1(ns, df):
+    import statsmodels.formula.api as smf
+    m = smf.logit(M7_1_FORMULA, data=df).fit(disp=0)
+    pr = m.predict(df)
+    # 300명 전원을 분류하므로 띠를 좁게 둔다 (두 버전의 확률 차이는 1e-8 수준)
+    if ((pr > 0.399) & (pr < 0.401)).any():
+        return False
+    # 0.5 기준으로 세면 ③이 달라져야 한다
+    fp05 = int(((pr >= 0.5) & (df.subscribed == 0)).sum())
+    if fp05 == ns["a3"]:
+        return False
+    # exp(β)×10 으로 계산한 값과 ①이 달라야 한다 (당연히 다르지만 확인)
+    if round(np.exp(m.params["delay_min"]) * 10, 3) == round(ns["a1"], 3):
+        return False
+    return (0.3 < df.subscribed.mean() < 0.6 and 0.005 < ns["a2"] < 0.3
+            and abs(ns["a2"] - 0.05) > 0.01 and ns["a3"] >= 10)
+
+
+P.append(dict(
+    id="m7-3-1", set="m7", no="3-1", file="t3_1.csv", gen=gen_m7_1, chk=chk_m7_1,
+    title="밀키트 체험 고객 정기구독 전환 로지스틱 회귀 — k단위 오즈비, p-value, 임계값 분류",
+    statement="""밀키트 구독 서비스가 2주 무료 체험을 마친 고객 300명의 체험 기간 기록과 정기구독 전환 여부를 정리했다. 데이터 `t3_1.csv`의 칼럼은 다음과 같다.
+
+| 칼럼 | 설명 |
+|---|---|
+| customer_id | 고객 ID |
+| trial_orders | 체험 기간 주문 횟수 |
+| delay_min | 체험 기간 평균 배송 지연(분) |
+| rating | 체험 기간 평균 메뉴 평점(1~5) |
+| coupon | 전환 할인 쿠폰 수령 여부 (1 수령, 0 미수령) |
+| household | 가구원 수(명) |
+| subscribed | 정기구독 전환 여부 (1 전환, 0 미전환) |
+
+subscribed를 종속변수로, trial_orders, delay_min, rating, coupon, household 5개를 독립변수로 하는 로지스틱 회귀 모형을 전체 데이터로 적합하시오.
+
+- 모형은 절편항을 포함하며, 규제(벌점항) 없이 최대우도법으로 추정한다.
+- 각 회귀계수의 유의성은 양측 Wald 검정(z-검정)으로 판단하며, 유의수준은 0.05이다.
+
+① 다른 변수가 같을 때, delay_min이 10분 늘면 전환 오즈가 몇 배가 되는지 구하시오.
+
+② household 회귀계수의 p-value를 구하시오.
+
+③ 적합한 모형으로 300명 전원의 전환 예측확률을 구하고, 예측확률이 0.4 이상이면 1(전환), 0.4 미만이면 0(미전환)으로 분류한다. 실제로는 전환하지 않았는데(subscribed=0) 1로 분류된 고객 수를 구하시오.
+
+【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 넷째 자리까지 ③ 정수""",
+    formats=[F3, F4, FI],
+    solution="""import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+
+df = pd.read_csv('data/t3_1.csv')
+model = smf.logit('subscribed ~ trial_orders + delay_min + rating + coupon + household', data=df).fit(disp=0)
+
+a1 = np.exp(model.params['delay_min'] * 10)
+a2 = model.pvalues['household']
+
+prob = model.predict(df)
+pred = (prob >= 0.4).astype(int)
+a3 = int(((pred == 1) & (df['subscribed'] == 0)).sum())
+
+print(round(a1, 3))
+print(round(a2, 4))
+print(a3)
+""",
+    explain="""k단위 오즈비는 exp(β×k)다. exp(β)×k로 계산하면 틀린다(exp(β)를 k제곱한 값은 exp(β×k)와 같다). delay_min 계수가 음수라 ①은 1보다 작다. 지연이 10분 늘면 전환 오즈가 그만큼 줄어든다는 뜻이다.
+statsmodels logit의 p-value(`model.pvalues`)는 z 분포 기준 양측 Wald 검정이다. sklearn `LogisticRegression`은 기본으로 L2 규제가 걸리고 p-value를 주지 않으므로 이 문제에는 맞지 않다.
+③은 거짓양성(FP) 개수다. 기준을 습관처럼 0.5로 두면 값이 달라진다. `pd.crosstab(df['subscribed'], pred)`로 혼동행렬을 보면 실제 0 행, 예측 1 열의 칸이다.""",
+))
+
+
+# ---------------------------------------------------------------- m7-3-2 chi2 독립성 3x4 + 기대빈도 (기타 제외)
+COLLEGES = ["공학", "인문", "자연"]
+MODES = ["도보", "버스", "지하철", "자가용"]
+
+
+def gen_m7_2(rng):
+    n = 276
+    col = rng.choice(COLLEGES, n, p=[0.40, 0.32, 0.28])
+    probs = {
+        "공학": [0.22, 0.30, 0.36, 0.12],
+        "인문": [0.30, 0.31, 0.31, 0.08],
+        "자연": [0.24, 0.36, 0.26, 0.14],
+    }
+    mode = np.array([rng.choice(MODES, p=probs[c]) for c in col], dtype=object)
+    etc = rng.choice(n, 14, replace=False)
+    mode[etc] = "기타"
+    return pd.DataFrame({
+        "student_id": [f"S{i:05d}" for i in range(26001, 26001 + n)],
+        "college": col, "grade": rng.integers(1, 5, n), "commute": mode,
+        "minutes": rng.integers(5, 91, n),
+    })
+
+
+def chk_m7_2(ns, df):
+    t_all = pd.crosstab(df.college, df.commute)
+    if (df.commute == "기타").groupby(df.college).sum().min() < 1:
+        return False
+    # 기타를 빼지 않으면 ②③이 달라져야 한다
+    chi_all, p_all = stats.chi2_contingency(t_all)[:2]
+    if round(chi_all, 3) == round(ns["a2"], 3):
+        return False
+    d = df[df.commute != "기타"]
+    exp_ = stats.chi2_contingency(pd.crosstab(d.college, d.commute))[3]
+    if exp_.min() < 5:
+        return False
+    return 0.005 < ns["a3"] < 0.04 and p_all > 0.05
+
+
+P.append(dict(
+    id="m7-3-2", set="m7", no="3-2", file="t3_2.csv", gen=gen_m7_2, chk=chk_m7_2,
+    title="단과대학과 통학 수단 — 3×4 카이제곱 독립성 검정, 기대빈도",
+    statement="""어느 대학교가 학부생 276명에게 주로 이용하는 통학 수단을 설문했다. 한 행이 응답자 한 명이다. 데이터 `t3_2.csv`의 칼럼은 다음과 같다.
+
+| 칼럼 | 설명 |
+|---|---|
+| student_id | 학번 |
+| college | 소속 단과대학 (공학, 인문, 자연) |
+| grade | 학년 |
+| commute | 주 통학 수단 (도보, 버스, 지하철, 자가용, 기타) |
+| minutes | 편도 통학 시간(분) |
+
+commute가 기타인 응답을 제외하고, college와 commute로 3×4 분할표를 만들어 두 변수가 서로 독립이라는 귀무가설을 카이제곱 독립성 검정으로 검정하시오.
+
+- 카이제곱 검정은 오른쪽 꼬리(상측) 검정이며, 유의수준은 0.05이다.
+
+① 귀무가설이 참일 때 college가 공학이고 commute가 지하철인 칸의 기대빈도를 구하시오.
+
+② 검정통계량을 구하시오.
+
+③ p-value를 구하시오.
+
+【제출 형식】 ① 반올림하여 소수 셋째 자리까지 ② 반올림하여 소수 셋째 자리까지 ③ 반올림하여 소수 넷째 자리까지""",
+    formats=[F3, F3, F4],
+    solution="""import pandas as pd
+from scipy.stats import chi2_contingency
+
+df = pd.read_csv('data/t3_2.csv')
+df = df[df['commute'] != '기타']
+table = pd.crosstab(df['college'], df['commute'])
+
+chi2, p, dof, expected = chi2_contingency(table)
+expected = pd.DataFrame(expected, index=table.index, columns=table.columns)
+
+a1 = expected.loc['공학', '지하철']
+a2 = chi2
+a3 = p
+
+print(round(a1, 3))
+print(round(a2, 3))
+print(round(a3, 4))
+""",
+    explain="""기타 응답을 먼저 지워야 표가 3×4가 된다. 지우지 않으면 3×5 표가 되어 자유도(6 → 8), 통계량, p-value가 모두 달라지고 이 데이터에서는 p-value가 0.05를 넘는다.
+기대빈도 = (행 합계 × 열 합계) / 전체 합계다. `chi2_contingency`가 돌려주는 기대빈도는 numpy 배열이라 행·열 순서가 crosstab의 가나다순(공학, 인문, 자연 / 도보, 버스, 자가용, 지하철)을 따른다. 지문의 칼럼 순서대로 위치를 짚으면 엉뚱한 칸을 읽으므로 index·columns를 붙여 이름으로 찾는다.
+자유도가 1보다 크면 Yates 보정은 적용되지 않으므로 `correction` 인자는 결과에 영향이 없다. 모든 기대빈도가 5 이상이라 카이제곱 근사를 써도 된다.""",
 ))
 
 

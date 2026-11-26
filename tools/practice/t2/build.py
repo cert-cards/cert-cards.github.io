@@ -93,7 +93,28 @@ m = RandomForestRegressor(n_estimators=300, random_state=0).fit(X, y)
 pd.DataFrame({'pred': m.predict(X_test)}).to_csv('result.csv', index=False)
 print('misenc')
 """,
+    'm6': """import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+train = pd.read_csv('data/train.csv'); test = pd.read_csv('data/test.csv')
+y = train['result']
+X_all = pd.get_dummies(pd.concat([train.drop(columns=['booking_id', 'result']), test.drop(columns=['booking_id'])]))
+X, X_test = X_all.iloc[:len(train)], X_all.iloc[len(train):]
+m = RandomForestClassifier(random_state=0).fit(X, y)
+pd.DataFrame({'pred': m.predict_proba(X_test)[:, list(m.classes_).index('노쇼')]}).to_csv('result.csv', index=False)
+print('right')
+""",
+    'm7': """import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+train = pd.read_csv('data/train.csv'); test = pd.read_csv('data/test.csv')
+y = train['loans']
+X_all = pd.get_dummies(pd.concat([train.drop(columns=['date', 'loans']), test.drop(columns=['date'])]))
+X, X_test = X_all.iloc[:len(train)], X_all.iloc[len(train):]
+m = RandomForestRegressor(random_state=0).fit(X, y)
+pd.DataFrame({'pred': m.predict(X_test)}).to_csv('result.csv', index=False)
+print('nodate')
+""",
 }
+EXTRA_KEY = {'m4': 'hard', 'm5': 'misenc', 'm6': 'right', 'm7': 'nodate'}
 
 out_objs, report = [], []
 for p in P:
@@ -117,7 +138,7 @@ for p in P:
             fmt['neg'] = int(stdout.strip().splitlines()[-1])
         else:
             g = grade(d, s, p['metric'], 'exam')
-            fmt['hard' if s == 'm4' else 'misenc'] = g['score']
+            fmt[EXTRA_KEY[s]] = g['score']
             rec['extra'] = round(g['score'], 4)
     if s == 'm3':
         rec['extra_linreg_neg'] = fmt['neg']

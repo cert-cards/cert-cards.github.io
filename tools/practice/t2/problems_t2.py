@@ -388,3 +388,166 @@ pd.DataFrame({'pred': m.predict(X_test)}).to_csv('result.csv', index=False)
 gu의 강북은 train에만 있다. train과 test를 따로 LabelEncoder로 바꾸면 가나다순 번호가 하나씩 밀려 같은 구가 서로 다른 숫자가 되고, 오류 없이 엉뚱한 예측이 나온다(이 데이터에서 MAE {misenc:.2f}). 합쳐서 한 번에 인코딩하면 {sol:.2f}이다.
 평가 지표가 MAE이므로 검증도 `mean_absolute_error`로 본다.""",
 ))
+
+# ------------------------------------------------------------------ m6
+P.append(dict(
+    id='m6-2', set='m6', title='미용실 예약 노쇼 예측 (ROC-AUC)', metric='roc_auc', rows=1000,
+    target='result', idcol='booking_id',
+    statement="""다음은 한 미용실 체인의 예약 기록이다. 학습용 데이터(train.csv)를 이용하여 예약 고객이 예약 시간에 오지 않는지(노쇼) 여부(result)를 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 예약이 노쇼일 확률을 예측하여 제출하시오.
+
+- 학습용 데이터: 3,000행, 16개 칼럼 (result 포함)
+- 평가용 데이터: 1,000행, 15개 칼럼 (result 없음)
+
+| 칼럼 | 설명 |
+|---|---|
+| booking_id | 예약 번호 |
+| branch | 지점 (성수, 합정, 판교, 광교, 송파) |
+| service | 예약 시술 (커트, 펌, 염색, 클리닉) |
+| channel | 예약 경로 (앱, 전화, 포털, 방문) |
+| lead_days | 예약한 날부터 예약일까지 일수 |
+| slot | 예약 시간대 (오전, 오후, 저녁) |
+| weekend | 예약일이 주말인지 여부 (Y, N) |
+| age | 고객 나이 |
+| first_visit | 첫 방문 고객 여부 (Y, N) |
+| past_visits | 지난 1년 방문 횟수 |
+| past_noshow | 지난 1년 노쇼 횟수 |
+| deposit | 예약금 결제 여부 (Y, N) |
+| reminder | 전날 알림 확인 여부 (Y, N) |
+| price | 시술 예정 금액(천원) |
+| rain | 예약일 비 예보 여부 (Y, N) |
+| result | 예약 결과 (노쇼, 방문) |
+
+【유의 사항】
+
+- 성능 평가 지표는 ROC-AUC이며, 값이 높을수록 좋다.
+
+""" + SUBMIT_BLOCK.format(rows=1000, pred_desc='pred에는 노쇼(result = 노쇼)일 확률을 넣는다'),
+    solution="""import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+
+train = pd.read_csv('data/train.csv')
+test = pd.read_csv('data/test.csv')
+
+# 1) 타깃 확인 -> 0/1이 아니라 문자 '노쇼', '방문'
+print(train['result'].value_counts())
+
+# 2) 구할 확률이 노쇼이므로 노쇼를 1, 방문을 0으로 바꿔 둔다
+y = (train['result'] == '노쇼').astype(int)
+
+# 3) 범주형 원-핫 인코딩 (train과 test를 합쳐서)
+X_all = pd.concat([train.drop(columns=['booking_id', 'result']),
+                   test.drop(columns=['booking_id'])])
+X_all = pd.get_dummies(X_all, columns=['branch', 'service', 'channel', 'slot', 'weekend',
+                                       'first_visit', 'deposit', 'reminder', 'rain'])
+X = X_all.iloc[:len(train)]
+X_test = X_all.iloc[len(train):]
+
+# 4) 검증 (확률로 AUC 계산)
+X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, stratify=y, random_state=0)
+model = RandomForestClassifier(n_estimators=300, min_samples_leaf=10, random_state=0)
+model.fit(X_tr, y_tr)
+print('검증 AUC:', roc_auc_score(y_val, model.predict_proba(X_val)[:, 1]))
+
+# 5) 전체 train으로 다시 학습, 노쇼(1) 확률을 제출
+model.fit(X, y)
+print(model.classes_)                     # [0 1] -> 두 번째 열이 노쇼(1) 확률
+pred = model.predict_proba(X_test)[:, 1]
+pd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)
+print(pd.read_csv('result.csv').shape)
+""",
+    baseline="""import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+train = pd.read_csv('data/train.csv')
+test = pd.read_csv('data/test.csv')
+y = train['result']
+X_all = pd.get_dummies(pd.concat([train.drop(columns=['booking_id', 'result']), test.drop(columns=['booking_id'])]))
+X, X_test = X_all.iloc[:len(train)], X_all.iloc[len(train):]
+m = RandomForestClassifier(random_state=0).fit(X, y)
+pd.DataFrame({'pred': m.predict_proba(X_test)[:, 1]}).to_csv('result.csv', index=False)
+""",
+    explain="""result는 0/1이 아니라 문자 노쇼, 방문이다. 문자 타깃을 그대로 학습하면 `model.classes_`가 가나다순으로 `['노쇼', '방문']`이 되어, 습관대로 `predict_proba(X_test)[:, 1]`을 내면 노쇼가 아니라 방문할 확률을 내게 된다. 순위가 정반대라 ROC-AUC가 0.5보다 낮은 {base:.3f}이 나온다.
+같은 모형에서 노쇼 열(`[:, 0]`)을 내면 {right:.3f}이다. 헷갈리지 않으려면 `y = (train['result'] == '노쇼').astype(int)`로 구할 쪽을 1로 바꾸고 `classes_`가 `[0 1]`인지 확인한 뒤 `[:, 1]`을 낸다.
+`min_samples_leaf=10`으로 잎을 키우면 확률이 덜 들쭉날쭉해져 {sol:.3f}까지 오른다. AUC는 순위를 보는 지표라 `predict`의 0/1이 아니라 확률을 낸다.""",
+))
+
+# ------------------------------------------------------------------ m7
+P.append(dict(
+    id='m7-2', set='m7', title='도서관 분관 일 대출 권수 예측 (RMSE)', metric='rmse', rows=775,
+    target='loans', idcol='date',
+    statement="""다음은 한 시립도서관 분관들의 일별 대출 기록이다. 학습용 데이터(train.csv)를 이용하여 하루 대출 권수(loans)를 예측하는 모형을 만들고, 평가용 데이터(test.csv)의 loans를 예측하여 제출하시오.
+
+- 학습용 데이터: 2,355행, 9개 칼럼 (loans 포함)
+- 평가용 데이터: 775행, 8개 칼럼 (loans 없음)
+
+| 칼럼 | 설명 |
+|---|---|
+| date | 날짜 (YYYY-MM-DD). 월요일은 휴관이라 기록이 없음 |
+| branch | 분관 (중앙, 해오름, 별빛, 솔숲, 물빛) |
+| holiday | 공휴일 여부 (Y, N) |
+| temp | 일 평균기온(℃) |
+| rain_mm | 일 강수량(mm) |
+| event | 문화행사 개최 여부 (1: 개최, 0: 없음) |
+| new_books | 최근 1주 신착 도서 수(권) |
+| seats | 열람석 수 |
+| loans | 하루 대출 권수(권) |
+
+【유의 사항】
+
+- 성능 평가 지표는 RMSE(Root Mean Squared Error)이며, 값이 낮을수록 좋다.
+
+""" + SUBMIT_BLOCK.format(rows=775, pred_desc='pred에는 예측한 하루 대출 권수를 넣는다 (정수가 아니어도 된다)'),
+    solution="""import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+train = pd.read_csv('data/train.csv')
+test = pd.read_csv('data/test.csv')
+
+# 1) 날짜 범위 확인 -> 평가용 기간이 학습용 기간 뒤에 이어진다
+print(train['date'].min(), train['date'].max())
+print(test['date'].min(), test['date'].max())
+
+# 2) date는 문자열이라 그대로 쓰면 test 날짜가 train에 없다 -> 월과 요일을 뽑고 date는 뺀다
+for df in (train, test):
+    d = pd.to_datetime(df['date'])
+    df['month'] = d.dt.month
+    df['dow'] = d.dt.dayofweek            # 0=월 ... 6=일
+print(train.groupby('dow')['loans'].mean())
+
+# 3) 범주형 원-핫 인코딩 (train과 test를 합쳐서)
+y = train['loans']
+X_all = pd.concat([train.drop(columns=['date', 'loans']), test.drop(columns=['date'])])
+X_all = pd.get_dummies(X_all, columns=['branch', 'holiday'])
+X = X_all.iloc[:len(train)]
+X_test = X_all.iloc[len(train):]
+
+# 4) 검증
+X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, random_state=0)
+model = RandomForestRegressor(n_estimators=300, random_state=0)
+model.fit(X_tr, y_tr)
+print('검증 RMSE:', np.sqrt(mean_squared_error(y_val, model.predict(X_val))))
+
+# 5) 전체 train으로 다시 학습해 예측
+model.fit(X, y)
+pred = model.predict(X_test)
+pd.DataFrame({'pred': pred}).to_csv('result.csv', index=False)
+print(pd.read_csv('result.csv').shape)
+""",
+    baseline="""import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+train = pd.read_csv('data/train.csv')
+test = pd.read_csv('data/test.csv')
+y = train['loans']
+X_all = pd.get_dummies(pd.concat([train.drop(columns=['loans']), test]))
+X, X_test = X_all.iloc[:len(train)], X_all.iloc[len(train):]
+m = RandomForestRegressor(random_state=0).fit(X, y)
+pd.DataFrame({'pred': m.predict(X_test)}).to_csv('result.csv', index=False)
+""",
+    explain="""date는 문자열이고 평가용 기간(2025년 9월~2026년 2월)이 학습용 기간(2024년 3월~2025년 8월) 바로 뒤에 이어진다. 그대로 `pd.get_dummies`하면 날짜 하나하나가 칼럼이 되는데 test의 날짜는 train에 한 번도 없으므로 그 칼럼들은 학습에 쓰이지 않는다. 그래서 RMSE가 {base:.1f}이고, date를 아예 빼고 학습한 {nodate:.1f}보다도 나쁘다.
+대출 권수는 요일(토·일이 평일보다 1.5배 이상)과 월(방학인 1·2·7·8월이 많다)에 따라 크게 움직인다. `pd.to_datetime`으로 바꾼 뒤 `.dt.month`, `.dt.dayofweek`를 뽑아 넣으면 RMSE가 {sol:.1f}로 크게 내려간다.
+연도(`.dt.year`)는 넣지 않는다. test에는 2026년처럼 train에 없거나 적은 연도가 있고, 트리 모형은 본 적 없는 연도의 추세를 이어 그리지 못한다.""",
+))

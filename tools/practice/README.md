@@ -23,9 +23,10 @@ export EXAM_PY=$PWD/exam/bin/python BROWSER_PY=$PWD/browser/bin/python
 
 ```
 cd tools/practice
-(cd t1 && $EXAM_PY gen_t1.py && $EXAM_PY verify_t1.py)   # 작업형1 15문제
-(cd t3 && $EXAM_PY gen_t3.py && $EXAM_PY verify_t3.py)   # 작업형3 10문제
-(cd t2 && $EXAM_PY build.py --gen)                       # 작업형2 5문제: 생성, 두 버전 채점, 기준 점수 기록
+(cd t1 && $EXAM_PY gen_t1.py && $EXAM_PY verify_t1.py)   # 작업형1 21문제 (모의고사 1~7회)
+(cd t3 && $EXAM_PY gen_t3.py && $EXAM_PY verify_t3.py)   # 작업형3 14문제 (모의고사 1~7회)
+(cd t3 && $EXAM_PY gen_x3.py && python3 verify_x3.py)    # 작업형3 검정별 연습 15문제 (세트 x3, 시험 모드 없음)
+(cd t2 && $EXAM_PY build.py --gen)                       # 작업형2 7문제: 생성, 두 버전 채점, 기준 점수 기록
 $EXAM_PY merge_practice.py                               # parts/ → problems.json (parts/는 지운다)
 $EXAM_PY verify_practice.py && $BROWSER_PY verify_practice.py   # 합친 목록 전체를 다시 확인
 ```
