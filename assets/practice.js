@@ -47,7 +47,9 @@ window.Practice = (() => {
   const base = p => p.split('/').pop();
   const status = p => st.get('s:' + p.id, null);   // { done: true|false, score }
   const fmtScore = v => v === undefined || v === null ? '-' : (Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(4));
-  const sameAns = (got, want) => got === want || (got !== '' && want !== '' && !isNaN(+got) && !isNaN(+want) && +got === +want);
+  // 지문의 빼기 기호(−, U+2212)나 줄표를 그대로 옮겨 적어도 숫자로 읽는다
+  const normNum = v => String(v).trim().replace(/[\u2212\u2013\u2014]/g, '-');
+  const sameAns = (got, want) => { got = normNum(got); want = normNum(want); return got === want || (got !== '' && want !== '' && !isNaN(+got) && !isNaN(+want) && +got === +want); };
 
   // ── 화면 뼈대
   function skeleton(){

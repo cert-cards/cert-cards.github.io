@@ -38,7 +38,6 @@ P.append(dict(
 
 - 성능 평가 지표는 RMSE(Root Mean Squared Error)이며, 값이 낮을수록 좋다.
 - 평가용 데이터의 실제 매출(채점 기준값)에는 집계 누락이 없다. 모든 날이 정상 집계된 매출이다.
-- id는 식별자이므로 모형 학습에 사용하지 않는다.
 
 """ + SUBMIT_BLOCK.format(rows=800, pred_desc='pred에는 예측한 일 매출액(만원)을 넣는다'),
     solution="""import pandas as pd
@@ -114,7 +113,6 @@ P.append(dict(
 【유의 사항】
 
 - 성능 평가 지표는 macro F1 score이며, 값이 높을수록 좋다. (클래스별 F1을 단순 평균한 값)
-- id는 식별자이므로 모형 학습에 사용하지 않는다.
 
 """ + SUBMIT_BLOCK.format(rows=1000, pred_desc='pred에는 예측한 상태를 정상, 주의, 고장 중 하나의 문자 그대로 넣는다'),
     solution="""import pandas as pd
@@ -189,7 +187,6 @@ P.append(dict(
 【유의 사항】
 
 - 성능 평가 지표는 RMSLE(Root Mean Squared Logarithmic Error)이며, 값이 낮을수록 좋다.
-- id는 식별자이므로 모형 학습에 사용하지 않는다.
 
 """ + SUBMIT_BLOCK.format(rows=800, pred_desc='pred에는 예측한 충전 건수를 넣는다 (정수가 아니어도 된다)'),
     solution="""import pandas as pd
@@ -266,7 +263,6 @@ P.append(dict(
 【유의 사항】
 
 - 성능 평가 지표는 ROC-AUC이며, 값이 높을수록 좋다.
-- member_id는 식별자이므로 모형 학습에 사용하지 않는다.
 
 """ + SUBMIT_BLOCK.format(rows=900, pred_desc='pred에는 재등록(re_register = 1)할 확률을 넣는다'),
     solution="""import pandas as pd
@@ -342,7 +338,6 @@ P.append(dict(
 【유의 사항】
 
 - 성능 평가 지표는 MAE(Mean Absolute Error)이며, 값이 낮을수록 좋다.
-- room_id는 식별자이므로 모형 학습에 사용하지 않는다.
 
 """ + SUBMIT_BLOCK.format(rows=1000, pred_desc='pred에는 예측한 월세(만원)를 넣는다'),
     solution="""import pandas as pd
